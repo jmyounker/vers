@@ -209,7 +209,7 @@ func createInitFile(versionFile string) error {
 
 
 func writeConfig(filename string, config Config) error {
-	data, err := json.Marshal(config)
+	data, err := json.MarshalIndent(config, "", "  ")
 	if err != nil {
 		return err
 	}
@@ -386,6 +386,7 @@ func main() {
 		os.Exit(1)
 	}
 }
+
 
 
 
