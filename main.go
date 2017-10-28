@@ -10,21 +10,22 @@ import (
 	"github.com/urfave/cli"
 	//"github.com/hoisie/mustache"
 	//"regexp"
+	"path/filepath"
 	"regexp"
 	"strconv"
 )
 
 func actionInit(c *cli.Context) error {
 	vf := c.GlobalString("file")
-	if (vf == "") {
+	if vf == "" {
 		return errors.New("version file required")
 	}
 	return createInitFile(vf)
 }
 
 func actionShow(c *cli.Context) error {
-	vf := c.GlobalString("file")
-	if (vf == "") {
+	vf, err := GetVersionFile(c)
+	if err != nil {
 		return errors.New("version file required")
 	}
 
@@ -33,7 +34,7 @@ func actionShow(c *cli.Context) error {
 		return err
 	}
 	if config.Branches == nil {
-		fmt.Println("Couldnot parse branches")
+		return errors.New(fmt.Sprintf("Could not parse branches"))
 	}
 
 	// Get options from command line
@@ -45,7 +46,7 @@ func actionShow(c *cli.Context) error {
 	ctx := NewContext(vf, config, opts)
 
 	// get branch from combination of supplied variables and lazy RCS
-	branch, err := ctx.getBranch()
+	branch, err := LookupParameter("branch", &ctx)
 	if err != nil {
 		return err
 	}
@@ -62,47 +63,29 @@ func actionShow(c *cli.Context) error {
 		return err
 	}
 
-	// get list of unexpanded variables
-	vars := format.Variables()
-	unexpanded := []string{}
-	for _, v := range(vars) {
-		_, ok := ctx.State[v]
-		if !ok {
-			unexpanded = append(unexpanded, v)
-		}
-	}
-
-	// for each still unexpanded variable, variables perform the expansion
-	for _, v := range(unexpanded) {
-		value, err := ExpandVariable(v, &ctx)
-		if err != nil {
-			return err
-		}
-		ctx.State[v] = value
-	}
-
 	// perform expansion
-	version, err := format.Expand(&ctx.State)
+	version, err := format.Expand(&ctx)
 	if err != nil {
 		return nil
 	}
 	fmt.Println(version)
 	return nil
 }
-
 
 func actionDataFile(c *cli.Context) error {
-	vf := c.GlobalString("file")
-	if (vf == "") {
+	vf, err := GetVersionFile(c)
+	if err != nil {
 		return errors.New("version file required")
 	}
+
+	df := c.String("data-file")
 
 	config, err := readConfig(vf)
 	if err != nil {
 		return err
 	}
 	if config.Branches == nil {
-		fmt.Println("Couldnot parse branches")
+		return errors.New(fmt.Sprintf("Could not parse branches"))
 	}
 
 	// Get options from command line
@@ -114,7 +97,7 @@ func actionDataFile(c *cli.Context) error {
 	ctx := NewContext(vf, config, opts)
 
 	// get branch from combination of supplied variables and lazy RCS
-	branch, err := ctx.getBranch()
+	branch, err := LookupParameter("branch", &ctx)
 	if err != nil {
 		return err
 	}
@@ -131,61 +114,59 @@ func actionDataFile(c *cli.Context) error {
 		return err
 	}
 
-	// get list of unexpanded variables
-	vars := format.Variables()
-	unexpanded := []string{}
-	for _, v := range(vars) {
-		_, ok := ctx.State[v]
-		if !ok {
-			unexpanded = append(unexpanded, v)
-		}
-	}
-
-	// for each still unexpanded variable, variables perform the expansion
-	for _, v := range(unexpanded) {
-		value, err := ExpandVariable(v, &ctx)
-		if err != nil {
-			return err
-		}
-		ctx.State[v] = value
-	}
-
 	// perform expansion
-	version, err := format.Expand(&ctx.State)
+	version, err := format.Expand(&ctx)
 	if err != nil {
 		return nil
 	}
-	fmt.Println(version)
+	ctx.State["version"] = version
+
+	data := map[string]string{}
+	for _, v := range ctx.Config.DataFileFields {
+		value, err := LookupParameter(v, &ctx)
+		if err != nil {
+			return err
+		}
+		data[v] = value
+	}
+
+	if df == "" {
+		d, err := json.MarshalIndent(data, "", "  ")
+		if err != nil {
+			return err
+		}
+		fmt.Printf("%s\n", d)
+		return nil
+	}
+	err = writeDataFile(df, data)
+	if err != nil {
+		return err
+	}
 	return nil
 }
 
-
-
-func ExpandVariable(v string, c *Context) (string, error) {
-	return "", errors.New(fmt.Sprintf("currently no expansions are defined for %s", v))
-}
-
-
 type Context struct {
-	Rcs LazyRcsContainer
-	State map[string]string
-}
-
-type LazyRcsContainer struct {
 	VersionFile string
+	Rcs         Rcs
+	State       map[string]string
+	Config      Config
 }
 
-
-type GenericRcs interface {
-	getCommitCounter() int
-	getBranch() string
-	supportsCommitHashes() bool
-	getCommitHash()
+func (c *Context) GetRcs() (Rcs, error) {
+	if c.Rcs != nil {
+		return c.Rcs, nil
+	}
+	rcs, err := GetRcs(c.VersionFile)
+	if err != nil {
+		return nil, err
+	}
+	c.Rcs = rcs
+	return rcs, nil
 }
 
 func actionValidate(c *cli.Context) error {
 	vf := c.GlobalString("file")
-	if (vf == "") {
+	if vf == "" {
 		return errors.New("version file required")
 	}
 
@@ -197,16 +178,23 @@ func actionValidate(c *cli.Context) error {
 }
 
 func createInitFile(versionFile string) error {
+	// --repo-type
+	// --semantic-versioning
+	// --template [python]
 	c := Config{
 		Branches: []BranchConfig{{
-				BranchPattern: ".*",
-				VersionTemplate: "{branch}.{commit-counter}",
-			},
+			BranchPattern:   ".*",
+			VersionTemplate: "{branch}.{commit-counter}",
 		},
-	};
+		},
+		DataFileFields: []string{
+			"branch",
+			"commit-counter",
+			"version",
+		},
+	}
 	return writeConfig(versionFile, c)
 }
-
 
 func writeConfig(filename string, config Config) error {
 	data, err := json.MarshalIndent(config, "", "  ")
@@ -216,6 +204,13 @@ func writeConfig(filename string, config Config) error {
 	return ioutil.WriteFile(filename, data, 0664)
 }
 
+func writeDataFile(filename string, dataFile map[string]string) error {
+	data, err := json.MarshalIndent(dataFile, "", "  ")
+	if err != nil {
+		return err
+	}
+	return ioutil.WriteFile(filename, data, 0664)
+}
 
 func readConfig(filename string) (*Config, error) {
 	var config Config
@@ -230,7 +225,7 @@ func readConfig(filename string) (*Config, error) {
 	if len(config.Branches) == 0 {
 		return nil, errors.New("confing must contain at least one branch expressions")
 	}
-	for _, bc := range(config.Branches) {
+	for _, bc := range config.Branches {
 		err := checkBranchConfig(bc)
 		if err != nil {
 			return nil, err
@@ -238,7 +233,6 @@ func readConfig(filename string) (*Config, error) {
 	}
 	return &config, nil
 }
-
 
 func checkBranchConfig(bc BranchConfig) error {
 	if bc.BranchPattern == "" {
@@ -259,26 +253,24 @@ func checkBranchConfig(bc BranchConfig) error {
 }
 
 type Config struct {
-	Data DataConfig	`json:"data"`
-	Branches []BranchConfig `json:"branches"`
+	Data           DataConfig     `json:"data"`
+	Branches       []BranchConfig `json:"branches"`
+	DataFileFields []string       `json:"data-file"`
 }
 
-
 type DataConfig struct {
-	Major int `json:"major"`
-	Minor int `json:"minor"`
+	Major   int `json:"major"`
+	Minor   int `json:"minor"`
 	Release int `json:"release"`
 }
 
-
 type BranchConfig struct {
-	BranchPattern string `json:"branch"`
+	BranchPattern   string `json:"branch"`
 	VersionTemplate string `json:"version"`
 }
 
-
 func (c *Config) getBranchConfig(branch string) (*BranchConfig, error) {
-	for _, bc := range(c.Branches) {
+	for _, bc := range c.Branches {
 		ptrn := regexp.MustCompile(bc.BranchPattern)
 		if ptrn.MatchString(branch) {
 			return &bc, nil
@@ -296,22 +288,17 @@ func (c *Context) getBranch() (string, error) {
 }
 
 type Option struct {
-	Name string
+	Name  string
 	Value string
 }
 
 func NewContext(versionFile string, c *Config, opts []Option) Context {
 	ctx := Context{
-		Rcs: LazyRcsContainer{
-			VersionFile: versionFile,
-
-		},
-		State: map[string]string{},
+		VersionFile: versionFile,
+		State:       map[string]string{},
+		Config:      *c,
 	}
-	ctx.State["major"] = strconv.Itoa(c.Data.Major)
-	ctx.State["minor"] = strconv.Itoa(c.Data.Minor)
-	ctx.State["release"] = strconv.Itoa(c.Data.Release)
-	for _, opt := range(opts) {
+	for _, opt := range opts {
 		ctx.State[opt.Name] = opt.Value
 	}
 	return ctx
@@ -324,13 +311,13 @@ func getOptions(c *cli.Context) ([]Option, error) {
 		return res, nil
 	}
 	optPtrn := regexp.MustCompile("([^=]+)=(.*)")
-	for _, opt := range(opts) {
+	for _, opt := range opts {
 		match := optPtrn.FindStringSubmatch(opt)
 		if len(match) == 0 {
 			return res, errors.New(fmt.Sprintf("cannot parse option '%s'", string(opt)))
 		}
 		o := Option{
-			Name: string(match[1]),
+			Name:  string(match[1]),
 			Value: string(match[2]),
 		}
 		res = append(res, o)
@@ -338,43 +325,46 @@ func getOptions(c *cli.Context) ([]Option, error) {
 	return res, nil
 }
 
-
 func main() {
 	app := cli.NewApp()
 
 	app.Flags = []cli.Flag{
 		cli.StringFlag{
-			Name:        "file, f",
-			Usage:       "Version file",
+			Name:  "file, f",
+			Usage: "Version file",
 		},
 	}
 
 	app.Commands = []cli.Command{
 		{
-			Name: "init",
+			Name:   "init",
 			Action: actionInit,
 		},
 		{
-			Name: "test-config",
+			Name:   "test-config",
 			Action: actionValidate,
 		},
 		{
-			Name: "show",
+			Name:   "show",
 			Action: actionShow,
-			Flags: []cli.Flag {
+			Flags: []cli.Flag{
 				cli.StringSliceFlag{
-					Name: "option, X",
+					Name:  "option, X",
 					Usage: "Specified option",
 				},
 			},
 		},
 		{
-			Name: "data-file",
+			Name:   "data-file",
 			Action: actionDataFile,
-			Flags: []cli.Flag {
+			Flags: []cli.Flag{
 				cli.StringSliceFlag{
-					Name: "option, X",
+					Name:  "option, X",
 					Usage: "Specified option",
+				},
+				cli.StringFlag{
+					Name:  "data-file, o",
+					Usage: "Data file",
 				},
 			},
 		},
@@ -387,8 +377,156 @@ func main() {
 	}
 }
 
+func GetVersionFile(c *cli.Context) (string, error) {
+	rf := c.GlobalString("file")
+	if rf == "" {
+		wd, err := os.Getwd()
+		if err != nil {
+			return "", errors.New(fmt.Sprintf("could not locate version file: %s", err.Error()))
+		}
+		dn, err := FindInPath(ContainsVersionFile, wd)
+		if err != nil {
+			return "", errors.New(fmt.Sprintf("could not locate version file: %s", err.Error()))
+		}
+		return filepath.Join(dn, "version.json"), nil
+	}
+	vf, err := filepath.Abs(filepath.Clean(rf))
+	if err != nil {
+		return "", err
+	}
+	return vf, nil
+}
 
+func LookupParameter(parameter string, c *Context) (string, error) {
+	// Pull from state first, getting memoized or hard-coded values.
+	v, ok := c.State[parameter]
+	if ok {
+		return v, nil
+	}
+	f, ok := ParameterLookups[parameter]
+	if !ok {
+		return "", errors.New(fmt.Sprintf("unknown parameter %s", parameter))
+	}
 
+	v, err := f(c)
+	if err != nil {
+		return "", err
+	}
+	c.State[parameter] = v
+	return v, nil
+}
+
+func LookupFromRcs(c *Context, f func(Rcs) (string, error)) (string, error) {
+	rcs, err := c.GetRcs()
+	if err != nil {
+		return "", err
+	}
+	cc, err := f(rcs)
+	if err != nil {
+		return "", err
+	}
+	return cc, nil
+}
+
+func LookupBranch(c *Context) (string, error) {
+	return LookupFromRcs(c, func(r Rcs) (string, error) { return r.Branch() })
+}
+
+func LookupCommitCounter(c *Context) (string, error) {
+	return LookupFromRcs(c, func(r Rcs) (string, error) { return r.CommitCounter() })
+}
+
+func LookupCommitHash(c *Context) (string, error) {
+	return LookupFromRcs(c, func(r Rcs) (string, error) { return r.CommitHash() })
+}
+
+func LookupCommitHashShort(c *Context) (string, error) {
+	return LookupFromRcs(c, func(r Rcs) (string, error) {
+		h, err := r.CommitHash()
+		if err != nil {
+			return "", err
+		}
+		return string([]rune(h)[0:8]), nil
+	})
+}
+
+func LookupMajor(c *Context) (string, error) {
+	return strconv.Itoa(c.Config.Data.Major), nil
+}
+
+func LookupMinor(c *Context) (string, error) {
+	return strconv.Itoa(c.Config.Data.Minor), nil
+}
+
+func LookupRelease(c *Context) (string, error) {
+	return strconv.Itoa(c.Config.Data.Release), nil
+}
+
+var ParameterLookups = map[string]func(c *Context) (string, error){
+	"branch":            LookupBranch,
+	"commit-counter":    LookupCommitCounter,
+	"commit-hash":       LookupCommitHash,
+	"commit-hash-short": LookupCommitHashShort,
+	"major":             LookupMajor,
+	"minor":             LookupMinor,
+	"release":           LookupRelease,
+}
+
+func FindInPath(f func(string) (bool, error), path string) (string, error) {
+	pi, err := os.Stat(path)
+	if err != nil {
+		return "", err
+	}
+	if pi.IsDir() {
+		return _FindInPath(f, path)
+	}
+	dn, _ := filepath.Split(path)
+	return _FindInPath(f, dn)
+}
+
+func _FindInPath(f func(string) (bool, error), path string) (string, error) {
+	contains, err := f(path)
+	if err != nil {
+		return "", err
+	}
+	if contains {
+		return path, nil
+	}
+	dn, fn := filepath.Split(path)
+	if fn == "" {
+		return "", errors.New("no match found")
+	}
+	return _FindInPath(f, dn)
+}
+
+func IsRcsDir(path string) (bool, error) {
+	return DirHasSatisfyingFile(
+		func(fi os.FileInfo) bool {
+			return fi.Name() == ".git" || fi.Name() == ".svn"
+		},
+		path)
+}
+
+func ContainsVersionFile(path string) (bool, error) {
+	return DirHasSatisfyingFile(
+		func(fi os.FileInfo) bool {
+			return fi.Name() == "version.json"
+		},
+		path)
+}
+
+func DirHasSatisfyingFile(f func(os.FileInfo) bool, path string) (bool, error) {
+	fs, err := ioutil.ReadDir(path)
+	if err != nil {
+		return false, err
+	}
+	for _, fi := range fs {
+		if f(fi) {
+			return true, nil
+		}
+	}
+	return false, nil
+}
 
 //func prepareConfig(config Json, state map[string]string) map[string]string;
 //func prepareOpts(opt Options, state map[string]string) map[string]string;

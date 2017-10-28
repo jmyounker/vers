@@ -13,7 +13,7 @@ type Template struct {
 }
 
 type TemplateNode interface {
-	Expand(c *map[string]string) (string, error)
+	Expand(c *Context) (string, error)
 	Vars() []string
 }
 
@@ -21,7 +21,7 @@ type StringLiteralNode struct {
 	Value string
 }
 
-func (n StringLiteralNode) Expand(c *map[string]string) (string, error) {
+func (n StringLiteralNode) Expand(c *Context) (string, error) {
 	return n.Value, nil
 }
 
@@ -33,9 +33,9 @@ type ExpansionNode struct {
 	Name string
 }
 
-func (n ExpansionNode) Expand(c *map[string]string) (string, error) {
-	value, ok := (*c)[n.Name]
-	if !ok {
+func (n ExpansionNode) Expand(c *Context) (string, error) {
+	value, err := LookupParameter(n.Name, c)
+	if err != nil {
 		return "", errors.New(fmt.Sprintf("could not expand %s", n.Name))
 	}
 	return value, nil
@@ -67,9 +67,9 @@ type ZeroFillExpansionNode struct {
 	FieldWidth int
 }
 
-func (n ZeroFillExpansionNode) Expand(c *map[string]string) (string, error) {
-	value, ok := (*c)[n.Name]
-	if !ok {
+func (n ZeroFillExpansionNode) Expand(c *Context) (string, error) {
+	value, err := LookupParameter(n.Name, c)
+	if err != nil {
 		return "", errors.New(fmt.Sprintf("could not expand %s", n.Name))
 	}
 	numValue, err := strconv.Atoi(value)
@@ -85,7 +85,7 @@ func (n ZeroFillExpansionNode) Vars() []string {
 	return []string{ n.Name }
 }
 
-func (t *Template) Expand(c *map[string]string) (string, error) {
+func (t *Template) Expand(c *Context) (string, error) {
 	res := ""
 	for _, node := range(t.Components) {
 		exp, err :=  node.Expand(c)
