@@ -5,6 +5,7 @@ import (
 	"errors"
 	"os/exec"
 	"strings"
+	"strconv"
 )
 
 type RcsGit struct {
@@ -34,7 +35,23 @@ func (v RcsGit) Branch() (string, error) {
 }
 
 func (v RcsGit) CommitCounter() (string, error) {
-	return "", nil
+	cmd := exec.Command("git", "rev-list", "HEAD", "--count")
+	var out bytes.Buffer
+	cmd.Stdout = &out
+	err := cmd.Run()
+	if err != nil {
+		return "", err
+	}
+	lines := strings.Split(out.String(), "\n")
+	if len(lines) != 2 {
+		return "", errors.New("expected only one line from rev-list")
+	}
+	// Ensure it can be converted to a number
+	c, err := strconv.Atoi(lines[0])
+	if err != nil {
+		return "", err
+	}
+	return strconv.Itoa(c), nil
 }
 
 func (v RcsGit) CommitHash() (string, error) {
