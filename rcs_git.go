@@ -55,5 +55,16 @@ func (v RcsGit) CommitCounter() (string, error) {
 }
 
 func (v RcsGit) CommitHash() (string, error) {
-	return "", nil
+	cmd := exec.Command("git", "log", "-n", "1", "--pretty=format:%H")
+	var out bytes.Buffer
+	cmd.Stdout = &out
+	err := cmd.Run()
+	if err != nil {
+		return "", err
+	}
+	lines := strings.Split(out.String(), "\n")
+	if len(lines) != 1 {
+		return "", errors.New("expected only one line from git log")
+	}
+	return lines[0], nil
 }
