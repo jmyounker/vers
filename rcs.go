@@ -29,4 +29,5 @@ type Rcs interface {
 	Branch() (string, error)
 	CommitCounter() (string, error)
 	CommitHash() (string, error)
+	CommitHashShort() (string, error)
 }

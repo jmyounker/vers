@@ -41,3 +41,7 @@ func (v RcsSvn) CommitCounter() (string, error) {
 func (v RcsSvn) CommitHash() (string, error) {
 	return "", errors.New("SVN does not support commit hashes")
 }
+
+func (v RcsSvn) CommitHashShort() (string, error) {
+	return "", errors.New("SVN does not support commit hashes")
+}

@@ -8,8 +8,6 @@ import (
 	"os"
 
 	"github.com/urfave/cli"
-	//"github.com/hoisie/mustache"
-	//"regexp"
 	"path/filepath"
 	"regexp"
 	"strconv"
@@ -441,13 +439,7 @@ func LookupCommitHash(c *Context) (string, error) {
 }
 
 func LookupCommitHashShort(c *Context) (string, error) {
-	return LookupFromRcs(c, func(r Rcs) (string, error) {
-		h, err := r.CommitHash()
-		if err != nil {
-			return "", err
-		}
-		return string([]rune(h)[0:8]), nil
-	})
+	return LookupFromRcs(c, func(r Rcs) (string, error) { return r.CommitHashShort() })
 }
 
 func LookupMajor(c *Context) (string, error) {
@@ -527,12 +519,3 @@ func DirHasSatisfyingFile(f func(os.FileInfo) bool, path string) (bool, error) {
 	}
 	return false, nil
 }
-
-//func prepareConfig(config Json, state map[string]string) map[string]string;
-//func prepareOpts(opt Options, state map[string]string) map[string]string;
-//func prepareRcs(rcs Rcs, state map[string]string) map[string]string;
-
-//func createRcs(ConfigFile string) (error, *Rcs);
-
-//func createDataFile(config json, state map[string]string);
-//func createVersion(format Template, state map[string]string) (error, string);
