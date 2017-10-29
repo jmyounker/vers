@@ -54,6 +54,14 @@ func (v RcsGit) CommitCounter() (string, error) {
 	return strconv.Itoa(c), nil
 }
 
+func (v RcsGit) RepoCounter() (string, error) {
+	return "", errors.New("Git does not support whole-repo commit counters")
+}
+
+func (v RcsGit) RepoRoot() (string, error) {
+	return "", errors.New("Git does not support repo root")
+}
+
 func (v RcsGit) CommitHash() (string, error) {
 	cmd := exec.Command("git", "log", "-n", "1", "--pretty=format:%H")
 	var out bytes.Buffer

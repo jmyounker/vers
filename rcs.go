@@ -28,6 +28,8 @@ func GetRcs(versionFile string) (Rcs, error) {
 type Rcs interface {
 	Branch() (string, error)
 	CommitCounter() (string, error)
+	RepoCounter() (string, error)
+	RepoRoot() (string, error)
 	CommitHash() (string, error)
 	CommitHashShort() (string, error)
 }

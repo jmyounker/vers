@@ -434,6 +434,10 @@ func LookupCommitCounter(c *Context) (string, error) {
 	return LookupFromRcs(c, func(r Rcs) (string, error) { return r.CommitCounter() })
 }
 
+func LookupRepoCounter(c *Context) (string, error) {
+	return LookupFromRcs(c, func(r Rcs) (string, error) { return r.RepoCounter() })
+}
+
 func LookupCommitHash(c *Context) (string, error) {
 	return LookupFromRcs(c, func(r Rcs) (string, error) { return r.CommitHash() })
 }
@@ -454,14 +458,20 @@ func LookupRelease(c *Context) (string, error) {
 	return strconv.Itoa(c.Config.Data.Release), nil
 }
 
+func LookupRepoRoot(c *Context) (string, error) {
+	return LookupFromRcs(c, func(r Rcs) (string, error) { return r.RepoRoot() } )
+}
+
 var ParameterLookups = map[string]func(c *Context) (string, error){
 	"branch":            LookupBranch,
 	"commit-counter":    LookupCommitCounter,
+	"repo-counter":      LookupRepoCounter,
 	"commit-hash":       LookupCommitHash,
 	"commit-hash-short": LookupCommitHashShort,
 	"major":             LookupMajor,
 	"minor":             LookupMinor,
 	"release":           LookupRelease,
+	"repo-root":	     LookupRepoRoot,
 }
 
 func FindInPath(f func(string) (bool, error), path string) (string, error) {
