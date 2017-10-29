@@ -13,6 +13,8 @@ import (
 	"strconv"
 )
 
+var version string;
+
 func actionInit(c *cli.Context) error {
 	vf := c.GlobalString("file")
 	if vf == "" {
@@ -512,6 +514,7 @@ func ValidateTemplateAsVersion(t Template) error {
 
 func main() {
 	app := cli.NewApp()
+	app.Version = version
 
 	app.Flags = []cli.Flag{
 		cli.StringFlag{

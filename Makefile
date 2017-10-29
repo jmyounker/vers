@@ -1,8 +1,11 @@
 clean:
-	rm vers
+	rm -f vers
 
-build:
-	go build
+buildp1:
+	go build -ldflags "-X main.version=P1"
+
+build: buildp1
+	go build --ldflags "-X main.version=$(shell ./vers -f version.json show)"
 
 run: build
 	./vers
