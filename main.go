@@ -180,6 +180,7 @@ func createInitFile(versionFile string) error {
 	// --semantic-versioning
 	// --template [python]
 	c := Config{
+		Data: map[string]interface{}{},
 		Branches: []BranchConfig{{
 			BranchPattern:   ".*",
 			VersionTemplate: "{branch}.{commit-counter}",
@@ -251,17 +252,17 @@ func checkBranchConfig(bc BranchConfig) error {
 }
 
 type Config struct {
-	Data           DataConfig     `json:"data"`
+	Data           map[string]interface{}    `json:"data"`
 	Branches       []BranchConfig `json:"branches"`
 	DataFileFields []string       `json:"data-file"`
 }
 
-type DataConfig struct {
-	Major   int `json:"major"`
-	Minor   int `json:"minor"`
-	Release int `json:"release"`
-}
-
+//type DataConfig struct {
+//	Major   int `json:"major"`
+//	Minor   int `json:"minor"`
+//	Release int `json:"release"`
+//}
+//
 type BranchConfig struct {
 	BranchPattern   string `json:"branch"`
 	VersionTemplate string `json:"version"`
@@ -401,15 +402,25 @@ func LookupParameter(parameter string, c *Context) (string, error) {
 	if ok {
 		return v, nil
 	}
+	// Next we look for values supplied in the config's data section.
+	if c.Config.HasData(parameter) {
+		v, err := c.Config.GetDataString(parameter)
+		if err != nil {
+			return "", err
+		}
+		return v, nil
+	}
+	// Finally we check to see if this is something that can be calculated.
 	f, ok := ParameterLookups[parameter]
 	if !ok {
 		return "", errors.New(fmt.Sprintf("unknown parameter %s", parameter))
 	}
-
 	v, err := f(c)
 	if err != nil {
 		return "", err
 	}
+	// We have a value, so we memoize it, ensuring that subsequent calls
+	// get the same value *and* don't have to calculate it.
 	c.State[parameter] = v
 	return v, nil
 }
@@ -446,20 +457,52 @@ func LookupCommitHashShort(c *Context) (string, error) {
 	return LookupFromRcs(c, func(r Rcs) (string, error) { return r.CommitHashShort() })
 }
 
-func LookupMajor(c *Context) (string, error) {
-	return strconv.Itoa(c.Config.Data.Major), nil
-}
-
-func LookupMinor(c *Context) (string, error) {
-	return strconv.Itoa(c.Config.Data.Minor), nil
-}
-
-func LookupRelease(c *Context) (string, error) {
-	return strconv.Itoa(c.Config.Data.Release), nil
-}
-
 func LookupRepoRoot(c *Context) (string, error) {
 	return LookupFromRcs(c, func(r Rcs) (string, error) { return r.RepoRoot() } )
+}
+
+
+func (c *Config) HasData(name string) bool {
+	_, ok := c.Data[name]
+	return ok
+}
+
+func (c *Config) GetDataInt(name string) (int, error) {
+	v, ok := c.Data[name]
+	if !ok {
+		return 0, fmt.Errorf("data field '%s' is not defined", name)
+	}
+	switch v.(type) {
+	case int:
+		return v.(int), nil
+	case float64:
+		return int(v.(float64)), nil
+	case string:
+		iv, err := strconv.Atoi(v.(string))
+		if err != nil {
+			return 0, fmt.Errorf("cannot convert '%s' to an int: %s", name, err.Error())
+		}
+		return iv, nil
+	default:
+		return 0, fmt.Errorf("'%s' is not an int", name)
+	}
+}
+
+func (c *Config) GetDataString(name string) (string, error) {
+	v, ok := c.Data[name]
+	if !ok {
+		return "", fmt.Errorf("data field '%s' is not defined", name)
+	}
+	switch v.(type) {
+	case int:
+		return strconv.Itoa(v.(int)), nil
+	case float64:
+		return strconv.Itoa(int(v.(float64))), nil
+	case string:
+		return v.(string), nil
+	default:
+		return "", fmt.Errorf("expected '%s' to be a string", name)
+	}
 }
 
 var ParameterLookups = map[string]func(c *Context) (string, error){
@@ -468,9 +511,6 @@ var ParameterLookups = map[string]func(c *Context) (string, error){
 	"repo-counter":      LookupRepoCounter,
 	"commit-hash":       LookupCommitHash,
 	"commit-hash-short": LookupCommitHashShort,
-	"major":             LookupMajor,
-	"minor":             LookupMinor,
-	"release":           LookupRelease,
 	"repo-root":	     LookupRepoRoot,
 }
 
