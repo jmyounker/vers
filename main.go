@@ -64,7 +64,7 @@ func actionShow(c *cli.Context) error {
 	// perform expansion
 	version, err := format.Expand(&ctx)
 	if err != nil {
-		return nil
+		return err
 	}
 	fmt.Println(version)
 	return nil
@@ -115,7 +115,7 @@ func actionDataFile(c *cli.Context) error {
 	// perform expansion
 	version, err := format.Expand(&ctx)
 	if err != nil {
-		return nil
+		return err
 	}
 	ctx.State["version"] = version
 
