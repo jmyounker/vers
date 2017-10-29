@@ -25,7 +25,10 @@ func TestParseAndExpandPlainString(t *testing.T) {
 	for _, tc := range(cases) {
 		tmpl, err := ParseString(tc.Template)
 		failWhenErr(t, err)
-		x, err := tmpl.Expand(&tc.Expansion)
+		ctx := Context{
+			State: tc.Expansion,
+		}
+		x, err := tmpl.Expand(&ctx)
 		failWhenErr(t, err)
 		if x != tc.Want {
 			fmt.Printf("Wanted '%s' but got '%s'\n", tc.Want, x)
