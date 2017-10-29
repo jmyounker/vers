@@ -18,7 +18,72 @@ func actionInit(c *cli.Context) error {
 	if vf == "" {
 		return errors.New("version file required")
 	}
-	return createInitFile(vf)
+	tn := c.String("template")
+	fmt.Printf("TMPLATE: %s\n", tn)
+	if tn == "" {
+		tn = "default"
+	}
+	return createInitFile(vf, tn)
+}
+
+
+var InitTemplates = map[string]Config{
+	"default": Config{
+		Data: map[string]interface{}{},
+		Branches: []BranchConfig{{
+			BranchPattern:   ".*",
+			VersionTemplate: "{branch}.{commit-counter}",
+		},
+		},
+		DataFileFields: []string{
+			"branch",
+			"commit-counter",
+			"version",
+		},
+	},
+	"semvar": Config{
+		Data: map[string]interface{}{
+			"major":   0,
+			"minor":   0,
+			"release": 1,
+		},
+		Branches: []BranchConfig{{
+			BranchPattern:   ".*",
+			VersionTemplate: "{major}.{minor}.{release}",
+		},
+		},
+		DataFileFields: []string{
+			"branch",
+			"commit-counter",
+			"major",
+			"minor",
+			"release",
+			"version",
+		},
+	},
+	"python": Config{
+		Data: map[string]interface{}{
+			"major":   0,
+			"minor":   0,
+			"release": 1,
+		},
+		Branches: []BranchConfig{{
+			BranchPattern:   "master|trunk",
+			VersionTemplate: "{major}.{minor}.{release}",
+		},{
+			BranchPattern:   ".*",
+			VersionTemplate: "{major}.{minor}.{release}dev{commit-counter}",
+		},
+		},
+		DataFileFields: []string{
+			"branch",
+			"commit-counter",
+			"major",
+			"minor",
+			"release",
+			"version",
+		},
+	},
 }
 
 func actionShow(c *cli.Context) error {
@@ -175,19 +240,10 @@ func actionValidate(c *cli.Context) error {
 	return nil
 }
 
-func createInitFile(versionFile string) error {
-	c := Config{
-		Data: map[string]interface{}{},
-		Branches: []BranchConfig{{
-			BranchPattern:   ".*",
-			VersionTemplate: "{branch}.{commit-counter}",
-		},
-		},
-		DataFileFields: []string{
-			"branch",
-			"commit-counter",
-			"version",
-		},
+func createInitFile(versionFile string, templateName string) error {
+	c, ok := InitTemplates[templateName]
+	if !ok {
+		return fmt.Errorf("unnknown template: %s", templateName)
 	}
 	return writeConfig(versionFile, c)
 }
@@ -253,9 +309,9 @@ func checkBranchConfig(bc BranchConfig) error {
 }
 
 type Config struct {
-	Data           map[string]interface{}    `json:"data"`
-	Branches       []BranchConfig `json:"branches"`
-	DataFileFields []string       `json:"data-file"`
+	Data           map[string]interface{} `json:"data"`
+	Branches       []BranchConfig         `json:"branches"`
+	DataFileFields []string               `json:"data-file"`
 }
 
 //type DataConfig struct {
@@ -326,7 +382,7 @@ func getOptions(c *cli.Context) ([]Option, error) {
 }
 
 func ValidateTemplateAsVersion(t Template) error {
-	for _, v := range(t.Variables()) {
+	for _, v := range t.Variables() {
 		if v == "version" {
 			return errors.New("{version} cannot be contained in the version template")
 		}
@@ -348,6 +404,12 @@ func main() {
 		{
 			Name:   "init",
 			Action: actionInit,
+			Flags: []cli.Flag{
+				cli.StringFlag{
+					Name:  "template",
+					Usage: "Choose a version file template",
+				},
+			},
 		},
 		{
 			Name:   "test-config",
@@ -468,9 +530,8 @@ func LookupCommitHashShort(c *Context) (string, error) {
 }
 
 func LookupRepoRoot(c *Context) (string, error) {
-	return LookupFromRcs(c, func(r Rcs) (string, error) { return r.RepoRoot() } )
+	return LookupFromRcs(c, func(r Rcs) (string, error) { return r.RepoRoot() })
 }
-
 
 func (c *Config) HasData(name string) bool {
 	_, ok := c.Data[name]
@@ -521,7 +582,7 @@ var ParameterLookups = map[string]func(c *Context) (string, error){
 	"repo-counter":      LookupRepoCounter,
 	"commit-hash":       LookupCommitHash,
 	"commit-hash-short": LookupCommitHashShort,
-	"repo-root":	     LookupRepoRoot,
+	"repo-root":         LookupRepoRoot,
 }
 
 func FindInPath(f func(string) (bool, error), path string) (string, error) {
