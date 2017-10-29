@@ -176,9 +176,6 @@ func actionValidate(c *cli.Context) error {
 }
 
 func createInitFile(versionFile string) error {
-	// --repo-type
-	// --semantic-versioning
-	// --template [python]
 	c := Config{
 		Data: map[string]interface{}{},
 		Branches: []BranchConfig{{
@@ -242,11 +239,15 @@ func checkBranchConfig(bc BranchConfig) error {
 	}
 	_, err := regexp.Compile(bc.BranchPattern)
 	if err != nil {
-		return errors.New(fmt.Sprintf("branch pattern '%s' is malformed", bc.BranchPattern))
+		return fmt.Errorf("branch pattern '%s' is malformed", bc.BranchPattern)
 	}
-	_, err = ParseString(bc.VersionTemplate)
+	t, err := ParseString(bc.VersionTemplate)
 	if err != nil {
-		return errors.New(fmt.Sprintf("version template '%s' is malformed", bc.VersionTemplate))
+		return fmt.Errorf("version template '%s' is malformed", bc.VersionTemplate)
+	}
+	err = ValidateTemplateAsVersion(t)
+	if err != nil {
+		return err
 	}
 	return nil
 }
@@ -322,6 +323,15 @@ func getOptions(c *cli.Context) ([]Option, error) {
 		res = append(res, o)
 	}
 	return res, nil
+}
+
+func ValidateTemplateAsVersion(t Template) error {
+	for _, v := range(t.Variables()) {
+		if v == "version" {
+			return errors.New("{version} cannot be contained in the version template")
+		}
+	}
+	return nil
 }
 
 func main() {
