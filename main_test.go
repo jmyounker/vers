@@ -23,7 +23,7 @@ func TestWriteInitFileProducesReadableFile(t *testing.T) {
 	tf, err := ioutil.TempFile("", "version.json")
 	failWhenErr(t, err)
 	defer os.Remove(tf.Name())
-	failWhenErr(t, createInitFile(tf.Name(), "default"))
+	failWhenErr(t, createInitFile(tf.Name(), "default", ""))
 	config, err := readConfig(tf.Name())
 	failWhenErr(t, err)
 	failWhen(t, config == nil)
