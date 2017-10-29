@@ -12,6 +12,10 @@ type RcsGit struct {
 	Root string
 }
 
+func (v RcsGit) Name() string {
+	return "git"
+}
+
 func (v RcsGit) Branch() (string, error) {
 	cmd := exec.Command("git", "status", "--porcelain", "--branch")
 	var out bytes.Buffer

@@ -19,13 +19,11 @@ func actionInit(c *cli.Context) error {
 		return errors.New("version file required")
 	}
 	tn := c.String("template")
-	fmt.Printf("TMPLATE: %s\n", tn)
 	if tn == "" {
 		tn = "default"
 	}
-	return createInitFile(vf, tn)
+	return createInitFile(vf, tn, c.String("rcs"))
 }
-
 
 var InitTemplates = map[string]Config{
 	"default": Config{
@@ -240,12 +238,38 @@ func actionValidate(c *cli.Context) error {
 	return nil
 }
 
-func createInitFile(versionFile string, templateName string) error {
+func createInitFile(versionFile string, templateName string, rcsName string) error {
 	c, ok := InitTemplates[templateName]
 	if !ok {
 		return fmt.Errorf("unnknown template: %s", templateName)
 	}
+	if rcsName == "" {
+		rcs, err := GetRcs(filepath.Dir(versionFile))
+		if err == nil {
+			rcsName = rcs.Name()
+		}
+	}
+	for _, df := range(RcsDataFileFields(rcsName)) {
+		c.DataFileFields = append(c.DataFileFields, df)
+	}
 	return writeConfig(versionFile, c)
+}
+
+func RcsDataFileFields(rcsName string) []string {
+	switch rcsName {
+	case "git":
+		return []string{
+			"commit-hash",
+			"commit-hash-short",
+		}
+	case "svn":
+		return []string{
+			"repo-counter",
+			"repo-root",
+		}
+	default:
+		return []string{}
+	}
 }
 
 func writeConfig(filename string, config Config) error {
@@ -408,6 +432,10 @@ func main() {
 				cli.StringFlag{
 					Name:  "template",
 					Usage: "Choose a version file template",
+				},
+				cli.StringFlag{
+					Name:  "rcs",
+					Usage: "Override RCS specification",
 				},
 			},
 		},

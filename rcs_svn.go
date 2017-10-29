@@ -14,6 +14,10 @@ type RcsSvn struct {
 	Root string
 }
 
+func (v RcsSvn) Name() string {
+	return "svn"
+}
+
 func (v RcsSvn) Branch() (string, error) {
 	info, err := v.SvnInfo()
 	if err != nil {
