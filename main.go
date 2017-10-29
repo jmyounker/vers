@@ -206,6 +206,102 @@ func actionDataFile(c *cli.Context) error {
 	return nil
 }
 
+func actionBumpMajor(c *cli.Context) error {
+	vf, err := GetVersionFile(c)
+	if err != nil {
+		return errors.New("version file required")
+	}
+
+	config, err := readConfig(vf)
+	if err != nil {
+		return err
+	}
+
+	major, err := config.GetDataInt("major")
+	if err != nil {
+		return err
+	}
+
+	// Ensure that minor is defined
+	_, err = config.GetDataInt("minor")
+	if err != nil {
+		return err
+	}
+
+	// Ensure that release is defined
+	_, err = config.GetDataInt("release")
+	if err != nil {
+		return err
+	}
+
+	config.Data["major"] = major + 1
+	config.Data["minor"] = 0
+	config.Data["release"] = 0
+
+	err = writeConfig(vf, *config)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func actionBumpMinor(c *cli.Context) error {
+	vf, err := GetVersionFile(c)
+	if err != nil {
+		return errors.New("version file required")
+	}
+
+	config, err := readConfig(vf)
+	if err != nil {
+		return err
+	}
+
+	minor, err := config.GetDataInt("minor")
+	if err != nil {
+		return err
+	}
+
+	// Ensure that release is defined in the file
+	_, err = config.GetDataInt("release")
+	if err != nil {
+		return err
+	}
+
+	config.Data["minor"] = minor + 1
+	config.Data["release"] = 0
+
+	err = writeConfig(vf, *config)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func actionBumpRelease(c *cli.Context) error {
+	vf, err := GetVersionFile(c)
+	if err != nil {
+		return errors.New("version file required")
+	}
+
+	config, err := readConfig(vf)
+	if err != nil {
+		return err
+	}
+
+	release, err := config.GetDataInt("release")
+	if err != nil {
+		return err
+	}
+
+	config.Data["release"] = release + 1
+
+	err = writeConfig(vf, *config)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 type Context struct {
 	VersionFile string
 	Rcs         Rcs
@@ -466,6 +562,18 @@ func main() {
 					Usage: "Data file",
 				},
 			},
+		},
+		{
+			Name:   "bump-major",
+			Action: actionBumpMajor,
+		},
+		{
+			Name:   "bump-minor",
+			Action: actionBumpMinor,
+		},
+		{
+			Name:   "bump-release",
+			Action: actionBumpRelease,
 		},
 	}
 
