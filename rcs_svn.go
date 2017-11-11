@@ -23,11 +23,11 @@ func (v RcsSvn) Branch() (string, error) {
 	if err != nil {
 		return "", nil
 	}
-	url, ok := info["Repository Root"]
+	path, ok := info["Relative URL"]
 	if !ok {
 		return "", errors.New("could not find URL in svn output")
 	}
-	return ParseBranchFromSvnUrl(url)
+	return ParseBranchFromSvnPath(path)
 }
 
 func (v RcsSvn) CommitCounter() (string, error) {
@@ -107,7 +107,7 @@ func ParseSvnInfo(svnOut string) (map[string]string, error) {
 	return info, nil
 }
 
-func ParseBranchFromSvnUrl(url string) (string, error) {
+func ParseBranchFromSvnPath(url string) (string, error) {
 	ptrns := []*regexp.Regexp{
 		regexp.MustCompile("/branches/([^/]+)"),
 		regexp.MustCompile("/(trunk)/"),
