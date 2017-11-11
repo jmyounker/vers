@@ -24,18 +24,7 @@ func (v RcsGit) Branch() (string, error) {
 	if err != nil {
 		return "", err
 	}
-	lines := strings.Split(out.String(), "\n")
-	if len(lines) == 0 {
-		return "", errors.New("expected at least one line of git output")
-	}
-	branch_line := strings.Split(lines[0], " ")
-	if len(branch_line) != 2 {
-		return "", errors.New("leading branch line should have at least two elements")
-	}
-	if branch_line[0] != "##" {
-		return "", errors.New("expected line to start with branch marker ##")
-	}
-	return branch_line[1], nil
+	return ParseGitStatus(out.String())
 }
 
 func (v RcsGit) CommitCounter() (string, error) {
@@ -96,3 +85,24 @@ func (v RcsGit) CommitHashShort() (string, error) {
 	return lines[0], nil
 }
 
+func ParseGitStatus(status string) (string, error) {
+	lines := strings.Split(status, "\n")
+	if len(lines) == 0 {
+		return "", errors.New("expected at least one line of git output")
+	}
+	branch_line := strings.Split(lines[0], " ")
+	if len(branch_line) < 2 {
+		return "", errors.New("leading branch line should have at least two elements")
+	}
+	if branch_line[0] != "##" {
+		return "", errors.New("expected line to start with branch marker ##")
+	}
+	if branch_line[1] == "HEAD" {
+		return "HEAD", nil
+	}
+	tracking_branch_parts := strings.Split(branch_line[1], "...")
+	if len(tracking_branch_parts) > 1 {
+		return strings.TrimPrefix(tracking_branch_parts[0], "origin/"), nil
+	}
+	return strings.TrimPrefix(branch_line[1], "origin/"), nil
+}
