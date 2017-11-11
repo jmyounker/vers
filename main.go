@@ -204,7 +204,7 @@ func actionShow(c *cli.Context) error {
 		return err
 	}
 	if config.Branches == nil {
-		return errors.New(fmt.Sprintf("Could not parse branches"))
+		return fmt.Errorf("Could not parse branches")
 	}
 
 	// Get options from command line
@@ -255,7 +255,7 @@ func actionDataFile(c *cli.Context) error {
 		return err
 	}
 	if config.Branches == nil {
-		return errors.New(fmt.Sprintf("Could not parse branches"))
+		return fmt.Errorf("Could not parse branches")
 	}
 
 	// Get options from command line
@@ -426,7 +426,7 @@ func getOptions(c *cli.Context) ([]Option, error) {
 	for _, opt := range opts {
 		match := optPtrn.FindStringSubmatch(opt)
 		if len(match) == 0 {
-			return res, errors.New(fmt.Sprintf("cannot parse option '%s'", string(opt)))
+			return res, fmt.Errorf("cannot parse option '%s'", string(opt))
 		}
 		o := Option{
 			Name:  string(match[1]),
@@ -443,11 +443,11 @@ func GetVersionFile(c *cli.Context) (string, error) {
 	if rf == "" {
 		wd, err := os.Getwd()
 		if err != nil {
-			return "", errors.New(fmt.Sprintf("could not locate version file: %s", err.Error()))
+			return "", fmt.Errorf("could not locate version file: %s", err.Error())
 		}
 		dn, err := FindInPath(ContainsVersionFile, wd)
 		if err != nil {
-			return "", errors.New(fmt.Sprintf("could not locate version file: %s", err.Error()))
+			return "", fmt.Errorf("could not locate version file: %s", err.Error())
 		}
 		return filepath.Join(dn, "version.json"), nil
 	}

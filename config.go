@@ -130,7 +130,7 @@ func (c *Config) getBranchConfig(branch string) (*BranchConfig, error) {
 			return &bc, nil
 		}
 	}
-	return nil, errors.New(fmt.Sprintf("no branch config matching branch '%s'", branch))
+	return nil, fmt.Errorf("no branch config matching branch '%s'", branch)
 }
 
 func ValidateTemplateAsVersion(t Template) error {
