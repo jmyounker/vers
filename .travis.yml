@@ -5,5 +5,5 @@ go:
   - master
 
 env:
-  commit-counter: ${TRAVIS_COMMIT}
+  "commit-counter": ${TRAVIS_COMMIT}
 
