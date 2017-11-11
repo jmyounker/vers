@@ -3,3 +3,7 @@ language: go
 go:
   - 1.x
   - master
+
+env:
+  commit-counter: ${TRAVIS_COMMIT}
+
