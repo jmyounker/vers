@@ -52,12 +52,16 @@ func LookupParameter(parameter string, c *Context) (string, error) {
 	if ok {
 		return v, nil
 	}
-	// Next we check the environment for overrides
+	// Next we check the environment for overrides.  First we
+	// check the raw parameter name.
 	ev, ok := os.LookupEnv(parameter)
 	if ok {
 		c.State[parameter] = ev
 		return ev, nil
 	}
+	// If it's missing then we look for a envar-ish looking name
+	// variant.  E.g. instead of commit-counter we look for
+	// COMMIT_COUNTER.
 	ev, ok = os.LookupEnv(MakeEnvarName(parameter))
 	if ok {
 		c.State[parameter] = ev
