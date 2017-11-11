@@ -304,38 +304,6 @@ func actionBumpRelease(c *cli.Context) error {
 	return nil
 }
 
-type Context struct {
-	VersionFile string
-	Rcs         Rcs
-	State       map[string]string
-	Config      Config
-}
-
-func (c *Context) GetRcs() (Rcs, error) {
-	if c.Rcs != nil {
-		return c.Rcs, nil
-	}
-	rcs, err := GetRcs(c.VersionFile)
-	if err != nil {
-		return nil, err
-	}
-	c.Rcs = rcs
-	return rcs, nil
-}
-
-func actionValidate(c *cli.Context) error {
-	vf := c.GlobalString("file")
-	if vf == "" {
-		return errors.New("version file required")
-	}
-
-	_, err := readConfig(vf)
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
 func createInitFile(versionFile string, templateName string, rcsName string) error {
 	c, ok := InitTemplates[templateName]
 	if !ok {
@@ -457,29 +425,9 @@ func (c *Config) getBranchConfig(branch string) (*BranchConfig, error) {
 	return nil, errors.New(fmt.Sprintf("no branch config matching branch '%s'", branch))
 }
 
-func (c *Context) getBranch() (string, error) {
-	branch, ok := c.State["branch"]
-	if ok {
-		return branch, nil
-	}
-	return "", errors.New("branch from RCS not yet implemented")
-}
-
 type Option struct {
 	Name  string
 	Value string
-}
-
-func NewContext(versionFile string, c *Config, opts []Option) Context {
-	ctx := Context{
-		VersionFile: versionFile,
-		State:       map[string]string{},
-		Config:      *c,
-	}
-	for _, opt := range opts {
-		ctx.State[opt.Name] = opt.Value
-	}
-	return ctx
 }
 
 func getOptions(c *cli.Context) ([]Option, error) {
@@ -607,71 +555,6 @@ func GetVersionFile(c *cli.Context) (string, error) {
 	return vf, nil
 }
 
-func LookupParameter(parameter string, c *Context) (string, error) {
-	// Pull from state first, getting memoized or hard-coded values.
-	v, ok := c.State[parameter]
-	if ok {
-		return v, nil
-	}
-	// Next we look for values supplied in the config's data section.
-	if c.Config.HasData(parameter) {
-		v, err := c.Config.GetDataString(parameter)
-		if err != nil {
-			return "", err
-		}
-		return v, nil
-	}
-	// Finally we check to see if this is something that can be calculated.
-	f, ok := ParameterLookups[parameter]
-	if !ok {
-		return "", errors.New(fmt.Sprintf("unknown parameter %s", parameter))
-	}
-	v, err := f(c)
-	if err != nil {
-		return "", err
-	}
-	// We have a value, so we memoize it, ensuring that subsequent calls
-	// get the same value *and* don't have to calculate it.
-	c.State[parameter] = v
-	return v, nil
-}
-
-func LookupFromRcs(c *Context, f func(Rcs) (string, error)) (string, error) {
-	rcs, err := c.GetRcs()
-	if err != nil {
-		return "", err
-	}
-	cc, err := f(rcs)
-	if err != nil {
-		return "", err
-	}
-	return cc, nil
-}
-
-func LookupBranch(c *Context) (string, error) {
-	return LookupFromRcs(c, func(r Rcs) (string, error) { return r.Branch() })
-}
-
-func LookupCommitCounter(c *Context) (string, error) {
-	return LookupFromRcs(c, func(r Rcs) (string, error) { return r.CommitCounter() })
-}
-
-func LookupRepoCounter(c *Context) (string, error) {
-	return LookupFromRcs(c, func(r Rcs) (string, error) { return r.RepoCounter() })
-}
-
-func LookupCommitHash(c *Context) (string, error) {
-	return LookupFromRcs(c, func(r Rcs) (string, error) { return r.CommitHash() })
-}
-
-func LookupCommitHashShort(c *Context) (string, error) {
-	return LookupFromRcs(c, func(r Rcs) (string, error) { return r.CommitHashShort() })
-}
-
-func LookupRepoRoot(c *Context) (string, error) {
-	return LookupFromRcs(c, func(r Rcs) (string, error) { return r.RepoRoot() })
-}
-
 func (c *Config) HasData(name string) bool {
 	_, ok := c.Data[name]
 	return ok
@@ -715,13 +598,17 @@ func (c *Config) GetDataString(name string) (string, error) {
 	}
 }
 
-var ParameterLookups = map[string]func(c *Context) (string, error){
-	"branch":            LookupBranch,
-	"commit-counter":    LookupCommitCounter,
-	"repo-counter":      LookupRepoCounter,
-	"commit-hash":       LookupCommitHash,
-	"commit-hash-short": LookupCommitHashShort,
-	"repo-root":         LookupRepoRoot,
+func actionValidate(c *cli.Context) error {
+	vf := c.GlobalString("file")
+	if vf == "" {
+		return errors.New("version file required")
+	}
+
+	_, err := readConfig(vf)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 func FindInPath(f func(string) (bool, error), path string) (string, error) {
