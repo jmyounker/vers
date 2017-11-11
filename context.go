@@ -36,14 +36,6 @@ func (c *Context) GetRcs() (Rcs, error) {
 	return rcs, nil
 }
 
-func (c *Context) getBranch() (string, error) {
-	branch, ok := c.State["branch"]
-	if ok {
-		return branch, nil
-	}
-	return "", errors.New("branch from RCS not yet implemented")
-}
-
 func LookupParameter(parameter string, c *Context) (string, error) {
 	// Pull from state first, getting memoized or hard-coded values.
 	v, ok := c.State[parameter]
