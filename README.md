@@ -242,6 +242,7 @@ The expansion `{release:03d}` expands to `005`.
 
 This lets you produce verions such as `1.3.02b004`.
 
+
 Additional Information
 ----------------------
 
@@ -326,5 +327,34 @@ And then the data file shows your the new `build-id` field.
   "version": "1.0.0.b42"
 }
 ```
+
+Environment Variables
+---------------------
+
+`Vers` accepts parameter values from the environment also.  It
+will check for the name as specified in file, and also for the
+name in upper case with `-` changed to `-`.
+
+The following example uses the preceding section's version pattern.
+
+```
+> export BUILD_ID=17
+> vers -f version.json show 
+1.0.0.b17
+```
+
+Overriding Parameter Values
+---------------------------
+
+You can override any parameter, even `branch`. This grants a great deal of
+flexibility and facilitates rapid testing.  Using the variable `commit-counter`
+as an example:
+
+1. Command line through the `-X` option.
+1. The environment variable `commit-counter`.
+1. The environment variable `COMMIT_COUNTER`,
+1. The parameter `commmit-counter` from the config file's `data` section.
+1. The built-in functions.
+
 
 

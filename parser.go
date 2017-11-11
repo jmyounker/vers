@@ -36,7 +36,7 @@ type ExpansionNode struct {
 func (n ExpansionNode) Expand(c *Context) (string, error) {
 	value, err := LookupParameter(n.Name, c)
 	if err != nil {
-		return "", errors.New(fmt.Sprintf("could not expand %s", n.Name))
+		return "", fmt.Errorf("could not expand %s", n.Name)
 	}
 	return value, nil
 }
@@ -70,11 +70,11 @@ type ZeroFillExpansionNode struct {
 func (n ZeroFillExpansionNode) Expand(c *Context) (string, error) {
 	value, err := LookupParameter(n.Name, c)
 	if err != nil {
-		return "", errors.New(fmt.Sprintf("could not expand %s", n.Name))
+		return "", fmt.Errorf("could not expand %s", n.Name)
 	}
 	numValue, err := strconv.Atoi(value)
 	if err != nil {
-		return "", errors.New(fmt.Sprintf("could not read %s as integer", value))
+		return "", fmt.Errorf("could not read %s as integer", value)
 	}
 	format := fmt.Sprintf("%%0%dd", n.FieldWidth)
 	return fmt.Sprintf(format, numValue), nil

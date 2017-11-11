@@ -3,6 +3,8 @@ package main
 import (
 	"errors"
 	"fmt"
+	"os"
+	"strings"
 )
 
 type Context struct {
@@ -42,6 +44,21 @@ func LookupParameter(parameter string, c *Context) (string, error) {
 	if ok {
 		return v, nil
 	}
+	// Next we check the environment for overrides.  First we
+	// check the raw parameter name.
+	ev, ok := os.LookupEnv(parameter)
+	if ok {
+		c.State[parameter] = ev
+		return ev, nil
+	}
+	// If it's missing then we look for a envar-ish looking name
+	// variant.  E.g. instead of commit-counter we look for
+	// COMMIT_COUNTER.
+	ev, ok = os.LookupEnv(MakeEnvarName(parameter))
+	if ok {
+		c.State[parameter] = ev
+		return ev, nil
+	}
 	// Next we look for values supplied in the config's data section.
 	if c.Config.HasData(parameter) {
 		v, err := c.Config.GetDataString(parameter)
@@ -53,7 +70,7 @@ func LookupParameter(parameter string, c *Context) (string, error) {
 	// Finally we check to see if this is something that can be calculated.
 	f, ok := ParameterLookups[parameter]
 	if !ok {
-		return "", errors.New(fmt.Sprintf("unknown parameter %s", parameter))
+		return "", fmt.Errorf("unknown parameter %s", parameter)
 	}
 	v, err := f(c)
 	if err != nil {
@@ -108,4 +125,9 @@ var ParameterLookups = map[string]func(c *Context) (string, error){
 	"commit-hash":       LookupCommitHash,
 	"commit-hash-short": LookupCommitHashShort,
 	"repo-root":         LookupRepoRoot,
+}
+
+func MakeEnvarName(s string) string {
+	upper := strings.ToUpper(s)
+	return strings.Replace(upper, "-", "_", -1)
 }
