@@ -71,14 +71,6 @@ func (c *Config) writeConfig(filename string) error {
 	return ioutil.WriteFile(filename, data, 0664)
 }
 
-func writeDataFile(filename string, dataFile map[string]string) error {
-	data, err := json.MarshalIndent(dataFile, "", "  ")
-	if err != nil {
-		return err
-	}
-	return ioutil.WriteFile(filename, data, 0664)
-}
-
 func readConfig(filename string) (*Config, error) {
 	var config Config
 	data, err := ioutil.ReadFile(filename)

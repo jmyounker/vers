@@ -9,6 +9,7 @@ import (
 	"github.com/urfave/cli"
 	"path/filepath"
 	"regexp"
+	"io/ioutil"
 )
 
 var version string;
@@ -315,6 +316,14 @@ func actionDataFile(c *cli.Context) error {
 	return nil
 }
 
+func writeDataFile(filename string, dataFile map[string]string) error {
+	data, err := json.MarshalIndent(dataFile, "", "  ")
+	if err != nil {
+		return err
+	}
+	return ioutil.WriteFile(filename, data, 0664)
+}
+
 func actionBumpMajor(c *cli.Context) error {
 	vf, err := GetVersionFile(c)
 	if err != nil {
@@ -436,7 +445,6 @@ func getOptions(c *cli.Context) ([]Option, error) {
 	}
 	return res, nil
 }
-
 
 func GetVersionFile(c *cli.Context) (string, error) {
 	rf := c.GlobalString("file")
