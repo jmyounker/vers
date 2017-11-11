@@ -26,4 +26,4 @@ _testmain.go
 *.prof
 
 .gitignore
-README.md
+vers
