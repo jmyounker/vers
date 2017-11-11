@@ -3,6 +3,7 @@ package main
 import (
 	"errors"
 	"fmt"
+	"os"
 )
 
 type Context struct {
@@ -49,6 +50,12 @@ func LookupParameter(parameter string, c *Context) (string, error) {
 	v, ok := c.State[parameter]
 	if ok {
 		return v, nil
+	}
+	// Next we check the environment for overrides
+	ev, ok := os.LookupEnv(parameter)
+	if ok {
+		c.State[parameter] = ev
+		return ev, nil
 	}
 	// Next we look for values supplied in the config's data section.
 	if c.Config.HasData(parameter) {
