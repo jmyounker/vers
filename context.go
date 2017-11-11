@@ -78,7 +78,7 @@ func LookupParameter(parameter string, c *Context) (string, error) {
 	// Finally we check to see if this is something that can be calculated.
 	f, ok := ParameterLookups[parameter]
 	if !ok {
-		return "", errors.New(fmt.Sprintf("unknown parameter %s", parameter))
+		return "", fmt.Errorf("unknown parameter %s", parameter)
 	}
 	v, err := f(c)
 	if err != nil {
