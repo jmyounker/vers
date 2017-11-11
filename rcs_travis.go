@@ -16,7 +16,7 @@ func (v RcsTravis) Name() string {
 
 func (v RcsTravis) Branch() (string, error) {
 	pb, ok := os.LookupEnv("TRAVIS_PULL_REQUEST_BRANCH")
-	if ok && pb != "false" {
+	if ok && pb != "" {
 		return pb, nil
 	}
 	b, ok := os.LookupEnv("TRAVIS_BRANCH")
