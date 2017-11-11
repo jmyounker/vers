@@ -11,6 +11,7 @@ func TestParseSvnInfo(t *testing.T) {
 		"URL: http://svn.red-bean.com/repos/test/foo.c\n" +
 		"Repository Root: http://svn.red-bean.com/repos/test\n" +
 		"Repository UUID: 5e7d134a-54fb-0310-bd04-b611643e5c25\n" +
+		"Relative URL: ^/branches/foo\n" +
 		"Revision: 4417\n" +
 		"Node Kind: file\n" +
 		"Schedule: normal\n" +
@@ -57,15 +58,15 @@ func TestParseBranch(t *testing.T) {
 		Url string
 		Branch string
 	}{
-		{ "http://svn.red-bean.com/repos/trunk", "trunk" },
-		{ "http://svn.red-bean.com/repos/trunk/foo", "trunk" },
-		{ "http://svn.red-bean.com/repos/branches/foo", "foo" },
-		{ "http://svn.red-bean.com/repos/branches/foo/bar", "foo" },
-		{ "http://svn.red-bean.com/repos/tags/foo", "foo" },
-		{ "http://svn.red-bean.com/repos/tags/foo/bar", "foo" },
+		{ "^/trunk/foo", "trunk" },
+		{ "^/trunk", "trunk" },
+		{ "^/branches/foo", "foo" },
+		{ "^/branches/foo/bar", "foo" },
+		{ "^/tags/foo", "foo" },
+		{ "^/tags/foo/bar", "foo" },
 	}
 	for _, tc := range(cases) {
-		b, err := ParseBranchFromSvnUrl(tc.Url)
+		b, err := ParseBranchFromSvnPath(tc.Url)
 		failWhenErr(t, err)
 		failWhen(t, b != tc.Branch)
 	}
