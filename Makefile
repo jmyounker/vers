@@ -6,6 +6,7 @@ clean:
 
 update:
 	git status --porcelain --branch
+    $(shell env)
 	go get
 
 buildp1:
