@@ -1,12 +1,13 @@
 {
   "data": {
     "major": 0,
-    "minor": 0
+    "minor": 0,
+    "release": 1
   },
   "branches": [
     {
       "branch": "master",
-      "version": "{major}.{minor}.{commit-counter}"
+      "version": "{major}.{minor}.{release}"
     },
     {
       "branch": ".*",
