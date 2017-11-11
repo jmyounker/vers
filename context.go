@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"strings"
 )
 
 type Context struct {
@@ -53,6 +54,11 @@ func LookupParameter(parameter string, c *Context) (string, error) {
 	}
 	// Next we check the environment for overrides
 	ev, ok := os.LookupEnv(parameter)
+	if ok {
+		c.State[parameter] = ev
+		return ev, nil
+	}
+	ev, ok = os.LookupEnv(MakeEnvarName(parameter))
 	if ok {
 		c.State[parameter] = ev
 		return ev, nil
@@ -123,4 +129,9 @@ var ParameterLookups = map[string]func(c *Context) (string, error){
 	"commit-hash":       LookupCommitHash,
 	"commit-hash-short": LookupCommitHashShort,
 	"repo-root":         LookupRepoRoot,
+}
+
+func MakeEnvarName(s string) string {
+	upper := strings.ToUpper(s)
+	return strings.Replace(upper, "-", "_", -1)
 }
