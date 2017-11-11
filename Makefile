@@ -1,12 +1,11 @@
-
-all: clean update build test
+all: clean update build test show
 
 clean:
 	rm -f vers
 
 update:
 	git status --porcelain --branch
-    $(shell env)
+	env | sort
 	go get
 
 buildp1:
@@ -15,8 +14,11 @@ buildp1:
 build: buildp1
 	go build -ldflags "-X main.version=$(shell ./vers -f version.json show)"
 
-run: build
-	./vers
+show: build
+	./vers --version
 
-test:
+run: build
+	./vers -f version.json show
+
+test: build
 	go test
