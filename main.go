@@ -4,12 +4,12 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io/ioutil"
 	"os"
-
-	"github.com/urfave/cli"
 	"path/filepath"
 	"regexp"
-	"io/ioutil"
+
+	"github.com/urfave/cli"
 )
 
 var version string;
