@@ -5,6 +5,7 @@ clean:
 	rm -f vers
 
 update:
+	git status --porcelain --branch
 	go get
 
 buildp1:
