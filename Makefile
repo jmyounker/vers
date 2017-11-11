@@ -1,8 +1,11 @@
 
-all: clean build test
+all: clean update build test
 
 clean:
 	rm -f vers
+
+update:
+	go get
 
 buildp1:
 	go build -ldflags "-X main.version=P1"
