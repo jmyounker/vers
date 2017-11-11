@@ -173,7 +173,7 @@ func createInitFile(versionFile string, templateName string, rcsName string) err
 	for _, df := range(RcsDataFileFields(rcsName)) {
 		c.DataFileFields = append(c.DataFileFields, df)
 	}
-	return writeConfig(versionFile, c)
+	return c.writeConfig(versionFile)
 }
 
 func RcsDataFileFields(rcsName string) []string {
@@ -347,7 +347,7 @@ func actionBumpMajor(c *cli.Context) error {
 	config.Data["minor"] = 0
 	config.Data["release"] = 0
 
-	err = writeConfig(vf, *config)
+	err = config.writeConfig(vf)
 	if err != nil {
 		return err
 	}
@@ -379,7 +379,7 @@ func actionBumpMinor(c *cli.Context) error {
 	config.Data["minor"] = minor + 1
 	config.Data["release"] = 0
 
-	err = writeConfig(vf, *config)
+	err = config.writeConfig(vf)
 	if err != nil {
 		return err
 	}
@@ -404,7 +404,7 @@ func actionBumpRelease(c *cli.Context) error {
 
 	config.Data["release"] = release + 1
 
-	err = writeConfig(vf, *config)
+	err = config.writeConfig(vf)
 	if err != nil {
 		return err
 	}

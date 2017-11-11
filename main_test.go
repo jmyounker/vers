@@ -34,7 +34,7 @@ func TestFileWithoutBranchesIsInvalid(t *testing.T) {
 	failWhenErr(t, err)
 	defer os.Remove(tf.Name())
 	c := Config{};
-	failWhenErr(t, writeConfig(tf.Name(), c))
+	failWhenErr(t, c.writeConfig(tf.Name()))
 	config, err := readConfig(tf.Name())
 	failWhen(t, err == nil)
 	failWhen(t, config != nil)
@@ -51,7 +51,7 @@ func TestFileWithInvalidBranchesIsInvalid(t *testing.T) {
 		},
 		},
 	};
-	failWhenErr(t, writeConfig(tf.Name(), c))
+	failWhenErr(t, c.writeConfig(tf.Name()))
 	config, err := readConfig(tf.Name())
 	failWhen(t, err == nil)
 	failWhen(t, config != nil)

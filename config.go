@@ -63,8 +63,8 @@ func (c *Config) GetDataString(name string) (string, error) {
 	}
 }
 
-func writeConfig(filename string, config Config) error {
-	data, err := json.MarshalIndent(config, "", "  ")
+func (c *Config) writeConfig(filename string) error {
+	data, err := json.MarshalIndent(c, "", "  ")
 	if err != nil {
 		return err
 	}
