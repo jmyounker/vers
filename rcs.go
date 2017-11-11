@@ -3,9 +3,14 @@ package main
 import (
 	"errors"
 	"io/ioutil"
+	"os"
 )
 
 func GetRcs(versionFile string) (Rcs, error) {
+	_, ok := os.LookupEnv("TRAVIS_BRANCH")
+	if ok {
+		return RcsTravis{}, nil
+	}
 	dn, err := FindInPath(IsRcsDir, versionFile)
 	if err != nil {
 		return nil, err
