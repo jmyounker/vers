@@ -13,6 +13,81 @@ import (
 
 var version string;
 
+func main() {
+	app := cli.NewApp()
+	app.Version = version
+
+	app.Flags = []cli.Flag{
+		cli.StringFlag{
+			Name:  "file, f",
+			Usage: "Version file",
+		},
+	}
+
+	app.Commands = []cli.Command{
+		{
+			Name:   "init",
+			Action: actionInit,
+			Flags: []cli.Flag{
+				cli.StringFlag{
+					Name:  "template",
+					Usage: "Choose a version file template",
+				},
+				cli.StringFlag{
+					Name:  "rcs",
+					Usage: "Override RCS specification",
+				},
+			},
+		},
+		{
+			Name:   "test-config",
+			Action: actionValidate,
+		},
+		{
+			Name:   "show",
+			Action: actionShow,
+			Flags: []cli.Flag{
+				cli.StringSliceFlag{
+					Name:  "option, X",
+					Usage: "Specified option",
+				},
+			},
+		},
+		{
+			Name:   "data-file",
+			Action: actionDataFile,
+			Flags: []cli.Flag{
+				cli.StringSliceFlag{
+					Name:  "option, X",
+					Usage: "Specified option",
+				},
+				cli.StringFlag{
+					Name:  "data-file, o",
+					Usage: "Data file",
+				},
+			},
+		},
+		{
+			Name:   "bump-major",
+			Action: actionBumpMajor,
+		},
+		{
+			Name:   "bump-minor",
+			Action: actionBumpMinor,
+		},
+		{
+			Name:   "bump-release",
+			Action: actionBumpRelease,
+		},
+	}
+
+	err := app.Run(os.Args)
+	if err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
+}
+
 func actionInit(c *cli.Context) error {
 	vf := c.GlobalString("file")
 	if vf == "" {
@@ -82,6 +157,40 @@ var InitTemplates = map[string]Config{
 			"version",
 		},
 	},
+}
+
+func createInitFile(versionFile string, templateName string, rcsName string) error {
+	c, ok := InitTemplates[templateName]
+	if !ok {
+		return fmt.Errorf("unnknown template: %s", templateName)
+	}
+	if rcsName == "" {
+		rcs, err := GetRcs(filepath.Dir(versionFile))
+		if err == nil {
+			rcsName = rcs.Name()
+		}
+	}
+	for _, df := range(RcsDataFileFields(rcsName)) {
+		c.DataFileFields = append(c.DataFileFields, df)
+	}
+	return writeConfig(versionFile, c)
+}
+
+func RcsDataFileFields(rcsName string) []string {
+	switch rcsName {
+	case "git":
+		return []string{
+			"commit-hash",
+			"commit-hash-short",
+		}
+	case "svn":
+		return []string{
+			"repo-counter",
+			"repo-root",
+		}
+	default:
+		return []string{}
+	}
 }
 
 func actionShow(c *cli.Context) error {
@@ -302,40 +411,6 @@ func actionBumpRelease(c *cli.Context) error {
 	return nil
 }
 
-func createInitFile(versionFile string, templateName string, rcsName string) error {
-	c, ok := InitTemplates[templateName]
-	if !ok {
-		return fmt.Errorf("unnknown template: %s", templateName)
-	}
-	if rcsName == "" {
-		rcs, err := GetRcs(filepath.Dir(versionFile))
-		if err == nil {
-			rcsName = rcs.Name()
-		}
-	}
-	for _, df := range(RcsDataFileFields(rcsName)) {
-		c.DataFileFields = append(c.DataFileFields, df)
-	}
-	return writeConfig(versionFile, c)
-}
-
-func RcsDataFileFields(rcsName string) []string {
-	switch rcsName {
-	case "git":
-		return []string{
-			"commit-hash",
-			"commit-hash-short",
-		}
-	case "svn":
-		return []string{
-			"repo-counter",
-			"repo-root",
-		}
-	default:
-		return []string{}
-	}
-}
-
 type Option struct {
 	Name  string
 	Value string
@@ -362,80 +437,6 @@ func getOptions(c *cli.Context) ([]Option, error) {
 	return res, nil
 }
 
-func main() {
-	app := cli.NewApp()
-	app.Version = version
-
-	app.Flags = []cli.Flag{
-		cli.StringFlag{
-			Name:  "file, f",
-			Usage: "Version file",
-		},
-	}
-
-	app.Commands = []cli.Command{
-		{
-			Name:   "init",
-			Action: actionInit,
-			Flags: []cli.Flag{
-				cli.StringFlag{
-					Name:  "template",
-					Usage: "Choose a version file template",
-				},
-				cli.StringFlag{
-					Name:  "rcs",
-					Usage: "Override RCS specification",
-				},
-			},
-		},
-		{
-			Name:   "test-config",
-			Action: actionValidate,
-		},
-		{
-			Name:   "show",
-			Action: actionShow,
-			Flags: []cli.Flag{
-				cli.StringSliceFlag{
-					Name:  "option, X",
-					Usage: "Specified option",
-				},
-			},
-		},
-		{
-			Name:   "data-file",
-			Action: actionDataFile,
-			Flags: []cli.Flag{
-				cli.StringSliceFlag{
-					Name:  "option, X",
-					Usage: "Specified option",
-				},
-				cli.StringFlag{
-					Name:  "data-file, o",
-					Usage: "Data file",
-				},
-			},
-		},
-		{
-			Name:   "bump-major",
-			Action: actionBumpMajor,
-		},
-		{
-			Name:   "bump-minor",
-			Action: actionBumpMinor,
-		},
-		{
-			Name:   "bump-release",
-			Action: actionBumpRelease,
-		},
-	}
-
-	err := app.Run(os.Args)
-	if err != nil {
-		fmt.Println(err)
-		os.Exit(1)
-	}
-}
 
 func GetVersionFile(c *cli.Context) (string, error) {
 	rf := c.GlobalString("file")
