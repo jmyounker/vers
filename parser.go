@@ -12,79 +12,6 @@ type Template struct {
 	Components []TemplateNode
 }
 
-type TemplateNode interface {
-	Expand(c *Context) (string, error)
-	Vars() []string
-}
-
-type StringLiteralNode struct {
-	Value string
-}
-
-func (n StringLiteralNode) Expand(c *Context) (string, error) {
-	return n.Value, nil
-}
-
-func (n StringLiteralNode) Vars() []string {
-	return []string{}
-}
-
-type ExpansionNode struct {
-	Name string
-}
-
-func (n ExpansionNode) Expand(c *Context) (string, error) {
-	value, err := LookupParameter(n.Name, c)
-	if err != nil {
-		return "", fmt.Errorf("could not expand %s", n.Name)
-	}
-	return value, nil
-}
-
-func NewExpansionNode(varExpr string) TemplateNode {
-	parts := strings.Split(varExpr, ":")
-	if len(parts) == 1 {
-		return &ExpansionNode{Name: parts[0]}
-	} else if len(parts) == 2 {
-		name := parts[0]
-		widthSpeciferRune := []rune(parts[1])[1]
-		widthSpecifer, err := strconv.Atoi(string(widthSpeciferRune))
-		if err != nil {
-			panic("run specifier must be a digit")
-		}
-		return &ZeroFillExpansionNode{Name: name, FieldWidth: widthSpecifer}
-	} else {
-		panic("malformed expansion node definition")
-	}
-}
-
-func (n ExpansionNode) Vars() []string {
-	return []string{ n.Name }
-}
-
-type ZeroFillExpansionNode struct {
-	Name string
-	FieldWidth int
-}
-
-func (n ZeroFillExpansionNode) Expand(c *Context) (string, error) {
-	value, err := LookupParameter(n.Name, c)
-	if err != nil {
-		return "", fmt.Errorf("could not expand %s", n.Name)
-	}
-	numValue, err := strconv.Atoi(value)
-	if err != nil {
-		return "", fmt.Errorf("could not read %s as integer", value)
-	}
-	format := fmt.Sprintf("%%0%dd", n.FieldWidth)
-	return fmt.Sprintf(format, numValue), nil
-}
-
-
-func (n ZeroFillExpansionNode) Vars() []string {
-	return []string{ n.Name }
-}
-
 func (t *Template) Expand(c *Context) (string, error) {
 	res := ""
 	for _, node := range(t.Components) {
@@ -129,36 +56,6 @@ func ParseString(template string) (Template, error) {
 	return tmpl, nil
 }
 
-type Token struct {
-	Kind int
-	Value string
-	Err error
-}
-
-func StringToken(value string) Token {
-	return Token{
-		Kind: TOKEN_STRING,
-		Value: value,
-		Err: nil,
-	}
-}
-
-func VarToken(value string) Token {
-	return Token{
-		Kind: TOKEN_VAR,
-		Value: value,
-		Err: nil,
-	}
-}
-
-func ErrorToken(msg string) Token {
-	return Token{
-		Kind: TOKEN_ERROR,
-		Value: "",
-		Err: errors.New(msg),
-	}
-}
-
 func Tokenize(template string) chan Token {
 	token_stream := make(chan Token)
 	go RunTokenizer(template, token_stream)
@@ -181,7 +78,6 @@ const (
 	STATE_SPECIFIER_DECIMAL = iota
 	STATE_NAME_COMPLETE = iota
 )
-
 
 func RunTokenizer(template string, out chan Token) {
 	t := ""
@@ -277,5 +173,107 @@ func RunTokenizer(template string, out chan Token) {
 	}
 }
 
+type Token struct {
+	Kind int
+	Value string
+	Err error
+}
+
+func StringToken(value string) Token {
+	return Token{
+		Kind: TOKEN_STRING,
+		Value: value,
+		Err: nil,
+	}
+}
+
+func VarToken(value string) Token {
+	return Token{
+		Kind: TOKEN_VAR,
+		Value: value,
+		Err: nil,
+	}
+}
+
+func ErrorToken(msg string) Token {
+	return Token{
+		Kind: TOKEN_ERROR,
+		Value: "",
+		Err: errors.New(msg),
+	}
+}
+
+type TemplateNode interface {
+	Expand(c *Context) (string, error)
+	Vars() []string
+}
+
+type StringLiteralNode struct {
+	Value string
+}
+
+func (n StringLiteralNode) Expand(c *Context) (string, error) {
+	return n.Value, nil
+}
+
+func (n StringLiteralNode) Vars() []string {
+	return []string{}
+}
+
+type ExpansionNode struct {
+	Name string
+}
+
+func NewExpansionNode(varExpr string) TemplateNode {
+	parts := strings.Split(varExpr, ":")
+	if len(parts) == 1 {
+		return &ExpansionNode{Name: parts[0]}
+	} else if len(parts) == 2 {
+		name := parts[0]
+		widthSpeciferRune := []rune(parts[1])[1]
+		widthSpecifer, err := strconv.Atoi(string(widthSpeciferRune))
+		if err != nil {
+			panic("run specifier must be a digit")
+		}
+		return &ZeroFillExpansionNode{Name: name, FieldWidth: widthSpecifer}
+	} else {
+		panic("malformed expansion node definition")
+	}
+}
+
+func (n ExpansionNode) Expand(c *Context) (string, error) {
+	value, err := LookupParameter(n.Name, c)
+	if err != nil {
+		return "", fmt.Errorf("could not expand %s", n.Name)
+	}
+	return value, nil
+}
+
+func (n ExpansionNode) Vars() []string {
+	return []string{ n.Name }
+}
+
+type ZeroFillExpansionNode struct {
+	Name string
+	FieldWidth int
+}
+
+func (n ZeroFillExpansionNode) Expand(c *Context) (string, error) {
+	value, err := LookupParameter(n.Name, c)
+	if err != nil {
+		return "", fmt.Errorf("could not expand %s", n.Name)
+	}
+	numValue, err := strconv.Atoi(value)
+	if err != nil {
+		return "", fmt.Errorf("could not read %s as integer", value)
+	}
+	format := fmt.Sprintf("%%0%dd", n.FieldWidth)
+	return fmt.Sprintf(format, numValue), nil
+}
+
+
+func (n ZeroFillExpansionNode) Vars() []string {
+	return []string{ n.Name }
+}
 
 
