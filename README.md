@@ -72,7 +72,7 @@ environment to other steps.  You can do this with with a version data file.
 }
 ```
 
-`Vers` can write the ata file directly to a file.
+`Vers` can write the data file directly to the filesystem.
 
 ```
 vers -f version.json data-file -o data-version.json
