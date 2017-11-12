@@ -25,18 +25,6 @@ func NewContext(versionFile string, c *Config, opts []Option) Context {
 	return ctx
 }
 
-func (c *Context) GetRcs() (Rcs, error) {
-	if c.Rcs != nil {
-		return c.Rcs, nil
-	}
-	rcs, err := GetRcs(c.VersionFile)
-	if err != nil {
-		return nil, err
-	}
-	c.Rcs = rcs
-	return rcs, nil
-}
-
 func LookupParameter(parameter string, c *Context) (string, error) {
 	// Pull from state first, getting memoized or hard-coded values.
 	v, ok := c.State[parameter]
@@ -81,16 +69,13 @@ func LookupParameter(parameter string, c *Context) (string, error) {
 	return v, nil
 }
 
-func LookupFromRcs(c *Context, f func(Rcs) (string, error)) (string, error) {
-	rcs, err := c.GetRcs()
-	if err != nil {
-		return "", err
-	}
-	cc, err := f(rcs)
-	if err != nil {
-		return "", err
-	}
-	return cc, nil
+var ParameterLookups = map[string]func(c *Context) (string, error){
+	"branch":            LookupBranch,
+	"commit-counter":    LookupCommitCounter,
+	"repo-counter":      LookupRepoCounter,
+	"commit-hash":       LookupCommitHash,
+	"commit-hash-short": LookupCommitHashShort,
+	"repo-root":         LookupRepoRoot,
 }
 
 func LookupBranch(c *Context) (string, error) {
@@ -117,13 +102,28 @@ func LookupRepoRoot(c *Context) (string, error) {
 	return LookupFromRcs(c, func(r Rcs) (string, error) { return r.RepoRoot() })
 }
 
-var ParameterLookups = map[string]func(c *Context) (string, error){
-	"branch":            LookupBranch,
-	"commit-counter":    LookupCommitCounter,
-	"repo-counter":      LookupRepoCounter,
-	"commit-hash":       LookupCommitHash,
-	"commit-hash-short": LookupCommitHashShort,
-	"repo-root":         LookupRepoRoot,
+func LookupFromRcs(c *Context, f func(Rcs) (string, error)) (string, error) {
+	rcs, err := c.GetRcs()
+	if err != nil {
+		return "", err
+	}
+	cc, err := f(rcs)
+	if err != nil {
+		return "", err
+	}
+	return cc, nil
+}
+
+func (c *Context) GetRcs() (Rcs, error) {
+	if c.Rcs != nil {
+		return c.Rcs, nil
+	}
+	rcs, err := GetRcs(c.VersionFile)
+	if err != nil {
+		return nil, err
+	}
+	c.Rcs = rcs
+	return rcs, nil
 }
 
 func MakeEnvarName(s string) string {
