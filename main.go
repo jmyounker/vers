@@ -230,6 +230,7 @@ func actionShow(c *cli.Context) error {
 	}
 
 	ctx.BranchParams = *branchParams
+	ctx.BranchConfig = branchConfig
 
 	format, err := ParseString(branchConfig.VersionTemplate)
 	if err != nil {
@@ -282,6 +283,7 @@ func actionDataFile(c *cli.Context) error {
 		return err
 	}
 	ctx.BranchParams = *branchParams
+	ctx.BranchConfig = branchConfig
 
 	format, err := ParseString(branchConfig.VersionTemplate)
 	if err != nil {
@@ -296,6 +298,15 @@ func actionDataFile(c *cli.Context) error {
 	ctx.State["version"] = version
 
 	data := map[string]string{}
+	if (ctx.BranchConfig.DataFileFields != nil) {
+		for _, v := range ctx.BranchConfig.DataFileFields {
+			value, err := LookupParameter(v, &ctx)
+			if err != nil {
+				return err
+			}
+			data[v] = value
+		}
+	}
 	for _, v := range ctx.Config.DataFileFields {
 		value, err := LookupParameter(v, &ctx)
 		if err != nil {

@@ -371,6 +371,26 @@ from the branch pattern.
 release-rc2
 ```
 
+It's important to note that submatch patterns don't allow `-`.  When
+`vers` looks up parameters containing minus signs it replaces `-` with
+`_`, so instead of looking for the submatch name `commit-counter` it 
+looks for `commit_counter`.  This is slightly surprising, but useful
+if your conventions use hyphens in names.
+
+ 
+Branch Data and Data File Sections
+----------------------------------
+
+Each branch config can also have its own data and data-file sections
+which augment the top-level settings.  Values from a branch's `data`
+section override values from the top level, allowing per-branch
+values.
+
+Entries in the branch's `data-file` section are unioned with the base
+`data-file` definitions to produce the final data file.  This allows
+you to include branch-specific information in your data file, such
+as the release candidate number.
+
 
 Overriding Parameter Values
 ---------------------------
@@ -382,9 +402,10 @@ as an example:
 1. Command line through the `-X` option.
 1. The environment variable `commit-counter`.
 1. The environment variable `COMMIT_COUNTER`.
-1. Pattern matching on the branch name.  (e.g. `branch=".*\\.(?P<commit-counter>\\d+)"`)
+1. Pattern matching on the branch name.  (e.g. `branch=".*\\.(?P<commit_counter>\\d+)"`)
 1. The built-in RCS functions.
-1. The parameter `commmit-counter` from the config file's `data` section.
+1. The parmetere `commit-counter` selected branch config's `data` section.
+1. The parameter `commit-counter` from the config file's `data` section.
 
 
 

@@ -10,7 +10,7 @@ import (
 )
 
 type Config struct {
-	Data           map[string]interface{} `json:"data"`
+	Data           map[string]interface{} `json:"data,omitempty"`
 	Branches       []BranchConfig         `json:"branches"`
 	DataFileFields []string               `json:"data-file"`
 }
@@ -18,6 +18,8 @@ type Config struct {
 type BranchConfig struct {
 	BranchPattern   string `json:"branch"`
 	VersionTemplate string `json:"version"`
+	Data map[string]interface{} `json:"data,omitempty"`
+	DataFileFields []string `json:"data-file,omitempty"`
 }
 
 func (c *Config) HasData(name string) bool {
@@ -25,11 +27,16 @@ func (c *Config) HasData(name string) bool {
 	return ok
 }
 
+
 func (c *Config) GetDataInt(name string) (int, error) {
 	v, ok := c.Data[name]
 	if !ok {
 		return 0, fmt.Errorf("data field '%s' is not defined", name)
 	}
+	return ParamDataToInt(v)
+}
+
+func ParamDataToInt(v interface{}) (int, error) {
 	switch v.(type) {
 	case int:
 		return v.(int), nil
@@ -38,19 +45,15 @@ func (c *Config) GetDataInt(name string) (int, error) {
 	case string:
 		iv, err := strconv.Atoi(v.(string))
 		if err != nil {
-			return 0, fmt.Errorf("cannot convert '%s' to an int: %s", name, err.Error())
+			return 0, fmt.Errorf("cannot convert '%s' to an int: %s", v, err.Error())
 		}
 		return iv, nil
 	default:
-		return 0, fmt.Errorf("'%s' is not an int", name)
+		return 0, fmt.Errorf("cannot convert '%s' to an int", v)
 	}
 }
 
-func (c *Config) GetDataString(name string) (string, error) {
-	v, ok := c.Data[name]
-	if !ok {
-		return "", fmt.Errorf("data field '%s' is not defined", name)
-	}
+func ParamDataToString(v interface{}) (string, error) {
 	switch v.(type) {
 	case int:
 		return strconv.Itoa(v.(int)), nil
@@ -59,7 +62,7 @@ func (c *Config) GetDataString(name string) (string, error) {
 	case string:
 		return v.(string), nil
 	default:
-		return "", fmt.Errorf("expected '%s' to be a string", name)
+		return "", fmt.Errorf("expected '%s' to be string, int, or float64", v)
 	}
 }
 

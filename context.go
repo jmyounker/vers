@@ -12,6 +12,7 @@ type Context struct {
 	State        map[string]string
 	Config       Config
 	BranchParams map[string]string
+	BranchConfig *BranchConfig
 }
 
 func NewContext(versionFile string, c *Config, opts []Option) Context {
@@ -28,6 +29,10 @@ func NewContext(versionFile string, c *Config, opts []Option) Context {
 
 func LookupParameter(parameter string, c *Context) (string, error) {
 	// Provides memoization/calculate once semantics for param lookup.
+	// Memoization is important because some derived values may change
+	// between requests.  We want to ensure that only a single value
+	// is ever used. Others, such as RCS operations, can potentially
+	// be expensive, so we wan't to avoid re-running them if possible.
 	v, ok := c.State[parameter]
 	if ok {
 		return v, nil
@@ -66,28 +71,26 @@ func LookupParameterWithoutMemoization(parameter string, c *Context) (string, er
 		return ev, nil
 	}
 	// Next we see if the parameter could be found in the branch name.
-	bp, ok := c.BranchParams[parameter]
+	// Minus signs are illegal in the regex matching group names, so
+	// we translate them to underscores.
+	bp, ok := c.BranchParams[strings.Replace(parameter, "-", "_", -1)]
 	if ok {
 		return bp, nil
 	}
 	// Next we see if it can be calculated.
 	f, ok := ParameterLookups[parameter]
 	if ok {
-		v, err := f(c)
-		if err != nil {
-			return "", err
-		}
-		// We have a value, so we memoize it, ensuring that subsequent calls
-		// get the same value *and* don't have to calculate it.
-		return v, nil
+		return f(c)
+	}
+	// Now get defaults from the data sections.
+	v, ok := c.BranchConfig.Data[parameter]
+	if ok {
+		return ParamDataToString(v)
 	}
 	// Finally we look for values supplied in the config's data section.
-	if c.Config.HasData(parameter) {
-		v, err := c.Config.GetDataString(parameter)
-		if err != nil {
-			return "", err
-		}
-		return v, nil
+	v, ok = c.Config.Data[parameter]
+	if ok {
+		return ParamDataToString(v)
 	}
 	return "", fmt.Errorf("unknown parameter %s", parameter)
 }
