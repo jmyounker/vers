@@ -224,10 +224,12 @@ func actionShow(c *cli.Context) error {
 
 	// locate appropriate branch config
 	// if branch does not match, error
-	branchConfig, err := config.getBranchConfig(branch)
+	branchConfig, branchParams, err := config.getBranchConfig(branch)
 	if err != nil {
 		return err
 	}
+
+	ctx.BranchParams = *branchParams
 
 	format, err := ParseString(branchConfig.VersionTemplate)
 	if err != nil {
@@ -275,10 +277,11 @@ func actionDataFile(c *cli.Context) error {
 
 	// locate appropriate branch config
 	// if branch does not match, error
-	branchConfig, err := config.getBranchConfig(branch)
+	branchConfig, branchParams, err := config.getBranchConfig(branch)
 	if err != nil {
 		return err
 	}
+	ctx.BranchParams = *branchParams
 
 	format, err := ParseString(branchConfig.VersionTemplate)
 	if err != nil {

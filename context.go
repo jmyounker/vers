@@ -7,10 +7,11 @@ import (
 )
 
 type Context struct {
-	VersionFile string
-	Rcs         Rcs
-	State       map[string]string
-	Config      Config
+	VersionFile  string
+	Rcs          Rcs
+	State        map[string]string
+	Config       Config
+	BranchParams map[string]string
 }
 
 func NewContext(versionFile string, c *Config, opts []Option) Context {
@@ -26,16 +27,35 @@ func NewContext(versionFile string, c *Config, opts []Option) Context {
 }
 
 func LookupParameter(parameter string, c *Context) (string, error) {
-	// Pull from state first, getting memoized or hard-coded values.
+	// Provides memoization/calculate once semantics for param lookup.
 	v, ok := c.State[parameter]
 	if ok {
 		return v, nil
 	}
-	// Next we check the environment for overrides.  First we
-	// check the raw parameter name.
+	v, err := LookupParameterWithoutMemoization(parameter, c)
+	if err != nil {
+		return v, err
+	}
+	c.State[parameter] = v
+	return v, nil
+}
+
+func LookupParameterWithoutMemoization(parameter string, c *Context) (string, error) {
+	// Parameter lookup is a layer cake of sources.  The general
+	// idea is that user input should override other values.
+	//   * Command line flags override everything.
+	//   * Environment variables with exact name match (build-id)
+	//   * Environment variables with convention match (BUILD_ID)
+	//   * Values derived from the branch name.
+	//   * Calculated values from VCS or other sources.
+	//   * Values from the config data section.
+	//  Having the config data section last lets it function as s
+	//  source of default values.
+	//
+	// Check the environment for overrides.  First we check the raw
+	// parameter name.
 	ev, ok := os.LookupEnv(parameter)
 	if ok {
-		c.State[parameter] = ev
 		return ev, nil
 	}
 	// If it's missing then we look for a envar-ish looking name
@@ -43,10 +63,25 @@ func LookupParameter(parameter string, c *Context) (string, error) {
 	// COMMIT_COUNTER.
 	ev, ok = os.LookupEnv(MakeEnvarName(parameter))
 	if ok {
-		c.State[parameter] = ev
 		return ev, nil
 	}
-	// Next we look for values supplied in the config's data section.
+	// Next we see if the parameter could be found in the branch name.
+	bp, ok := c.BranchParams[parameter]
+	if ok {
+		return bp, nil
+	}
+	// Next we see if it can be calculated.
+	f, ok := ParameterLookups[parameter]
+	if ok {
+		v, err := f(c)
+		if err != nil {
+			return "", err
+		}
+		// We have a value, so we memoize it, ensuring that subsequent calls
+		// get the same value *and* don't have to calculate it.
+		return v, nil
+	}
+	// Finally we look for values supplied in the config's data section.
 	if c.Config.HasData(parameter) {
 		v, err := c.Config.GetDataString(parameter)
 		if err != nil {
@@ -54,19 +89,7 @@ func LookupParameter(parameter string, c *Context) (string, error) {
 		}
 		return v, nil
 	}
-	// Finally we check to see if this is something that can be calculated.
-	f, ok := ParameterLookups[parameter]
-	if !ok {
-		return "", fmt.Errorf("unknown parameter %s", parameter)
-	}
-	v, err := f(c)
-	if err != nil {
-		return "", err
-	}
-	// We have a value, so we memoize it, ensuring that subsequent calls
-	// get the same value *and* don't have to calculate it.
-	c.State[parameter] = v
-	return v, nil
+	return "", fmt.Errorf("unknown parameter %s", parameter)
 }
 
 var ParameterLookups = map[string]func(c *Context) (string, error){

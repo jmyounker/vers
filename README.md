@@ -343,6 +343,35 @@ The following example uses the preceding section's version pattern.
 1.0.0.b17
 ```
 
+Branch Parameters
+-----------------
+
+Parameters such as release candidate number or ticket number are
+often available from the branch name, and `vers` can extract these
+from the branch pattern.
+
+```
+> cat version.json
+{
+  ...
+  "branches": [
+    {
+      "branch": "master",
+      "version": "{major}.{minor}.{release}"
+    },
+    {
+      "branch": "release-.*-RC(?P<rc>\\d+)",
+      "version": "releasae-rc{rc}"
+    }
+  ],
+  ...
+}
+
+> vers -f version.json show -X branch=release-foo-RC2
+release-rc2
+```
+
+
 Overriding Parameter Values
 ---------------------------
 
@@ -352,9 +381,10 @@ as an example:
 
 1. Command line through the `-X` option.
 1. The environment variable `commit-counter`.
-1. The environment variable `COMMIT_COUNTER`,
+1. The environment variable `COMMIT_COUNTER`.
+1. Pattern matching on the branch name.  (e.g. `branch=".*\\.(?P<commit-counter>\\d+)"`)
+1. The built-in RCS functions.
 1. The parameter `commmit-counter` from the config file's `data` section.
-1. The built-in functions.
 
 
 

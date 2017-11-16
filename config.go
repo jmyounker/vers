@@ -100,7 +100,7 @@ func checkBranchConfig(bc BranchConfig) error {
 	if bc.VersionTemplate == "" {
 		return errors.New("version template required")
 	}
-	_, err := regexp.Compile(bc.BranchPattern)
+	_, err := regexp.Compile("^" + bc.BranchPattern + "$")
 	if err != nil {
 		return fmt.Errorf("branch pattern '%s' is malformed", bc.BranchPattern)
 	}
@@ -115,14 +115,22 @@ func checkBranchConfig(bc BranchConfig) error {
 	return nil
 }
 
-func (c *Config) getBranchConfig(branch string) (*BranchConfig, error) {
+func (c *Config) getBranchConfig(branch string) (*BranchConfig, *map[string]string, error) {
 	for _, bc := range c.Branches {
-		ptrn := regexp.MustCompile(bc.BranchPattern)
-		if ptrn.MatchString(branch) {
-			return &bc, nil
+		ptrn := regexp.MustCompile("^" + bc.BranchPattern + "$")
+		matches := ptrn.FindStringSubmatch(branch)
+		if len(matches) == 0 {
+			continue
 		}
+		params := map[string]string{}
+		paramNames := ptrn.SubexpNames()[1:]
+		paramValues := matches[1:]
+		for i, name := range(paramNames) {
+			params[name] = paramValues[i]
+		}
+		return &bc, &params, nil
 	}
-	return nil, fmt.Errorf("no branch config matching branch '%s'", branch)
+	return nil, nil, fmt.Errorf("no branch config matching branch '%s'", branch)
 }
 
 func ValidateTemplateAsVersion(t Template) error {

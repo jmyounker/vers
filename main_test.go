@@ -81,3 +81,31 @@ func TestBranchConfig(t *testing.T) {
 	}
 }
 
+func TestBranchParameterExtraction(t *testing.T) {
+	c := Config{
+		Data: map[string]interface{}{},
+		Branches: []BranchConfig{{
+			BranchPattern:   "release-RC(?P<rc>\\d+)",
+			VersionTemplate: "RC{rc}}",
+		},{
+			BranchPattern:   ".*",
+			VersionTemplate: "default",
+		},
+		},
+		DataFileFields: []string{
+		},
+	}
+	_, bp, err := c.getBranchConfig("release-RC2")
+	failWhenErr(t, err)
+	failWhen(t, len(*bp) != 1)
+	rc, ok := (*bp)["rc"]
+	failWhen(t, !ok)
+	failWhen(t, rc != "2")
+
+	_, bp, err = c.getBranchConfig("foo")
+	failWhenErr(t, err)
+	failWhen(t, len(*bp) != 0)
+}
+
+
+
