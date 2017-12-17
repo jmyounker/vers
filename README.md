@@ -8,6 +8,10 @@ release engineering space.
 Vers uses a combination of a configuration file, the command line operations,
 and the revision control status to produce a unique version number.
 
+Downloads
+---------
+You can get RPMs, DEBs, and OSX packages from [theblobshop.com](https://www.theblobshop.com/downloads/vers).
+
 Usage
 -----
 Generating a version file for your poject is the first step.
