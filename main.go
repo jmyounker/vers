@@ -16,6 +16,7 @@ var version string;
 
 func main() {
 	app := cli.NewApp()
+	app.Usage = "Generate version information for builds."
 	app.Version = version
 
 	app.Flags = []cli.Flag{
@@ -29,6 +30,7 @@ func main() {
 		{
 			Name:   "init",
 			Action: actionInit,
+			Usage: "Create initial config file.",
 			Flags: []cli.Flag{
 				cli.StringFlag{
 					Name:  "template",
@@ -42,11 +44,13 @@ func main() {
 		},
 		{
 			Name:   "test-config",
+			Usage:  "Sanity check version file.",
 			Action: actionValidate,
 		},
 		{
 			Name:   "show",
 			Action: actionShow,
+			Usage:  "Print version.",
 			Flags: []cli.Flag{
 				cli.StringSliceFlag{
 					Name:  "option, X",
@@ -57,6 +61,7 @@ func main() {
 		{
 			Name:   "data-file",
 			Action: actionDataFile,
+			Usage: "Generate data file for build.",
 			Flags: []cli.Flag{
 				cli.StringSliceFlag{
 					Name:  "option, X",
@@ -70,14 +75,17 @@ func main() {
 		},
 		{
 			Name:   "bump-major",
+			Usage:  "Increment major version number in version file.",
 			Action: actionBumpMajor,
 		},
 		{
 			Name:   "bump-minor",
+			Usage:  "Increment minor version number in version file.",
 			Action: actionBumpMinor,
 		},
 		{
 			Name:   "bump-release",
+			Usage:  "Increment release number in version file.",
 			Action: actionBumpRelease,
 		},
 	}
