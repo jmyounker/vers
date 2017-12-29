@@ -4,8 +4,8 @@ import (
 	"errors"
 	"fmt"
 	"strconv"
-	"unicode"
 	"strings"
+	"unicode"
 )
 
 type Template struct {
@@ -14,8 +14,8 @@ type Template struct {
 
 func (t *Template) Expand(c *Context) (string, error) {
 	res := ""
-	for _, node := range(t.Components) {
-		exp, err :=  node.Expand(c)
+	for _, node := range t.Components {
+		exp, err := node.Expand(c)
 		if err != nil {
 			return res, err
 		}
@@ -26,13 +26,13 @@ func (t *Template) Expand(c *Context) (string, error) {
 
 func (t *Template) Variables() []string {
 	exp := map[string]bool{}
-	for _, n := range(t.Components) {
-		for _, v := range(n.Vars()) {
+	for _, n := range t.Components {
+		for _, v := range n.Vars() {
 			exp[v] = true
 		}
 	}
 	vars := []string{}
-	for v := range(exp) {
+	for v := range exp {
 		vars = append(vars, v)
 	}
 	return vars
@@ -64,19 +64,19 @@ func Tokenize(template string) chan Token {
 
 const (
 	TOKEN_STRING = iota
-	TOKEN_VAR = iota
-	TOKEN_ERROR = iota
+	TOKEN_VAR    = iota
+	TOKEN_ERROR  = iota
 )
 
 const (
-	STATE_STRING = iota
-	STATE_STRING_ESCAPE = iota
-	STATE_NAME_FIRST = iota
-	STATE_NAME_AFTER = iota
-	STATE_SPECIFIER_ZERO_FILL = iota
+	STATE_STRING                = iota
+	STATE_STRING_ESCAPE         = iota
+	STATE_NAME_FIRST            = iota
+	STATE_NAME_AFTER            = iota
+	STATE_SPECIFIER_ZERO_FILL   = iota
 	STATE_SPECIFIER_FIELD_WIDTH = iota
-	STATE_SPECIFIER_DECIMAL = iota
-	STATE_NAME_COMPLETE = iota
+	STATE_SPECIFIER_DECIMAL     = iota
+	STATE_NAME_COMPLETE         = iota
 )
 
 func RunTokenizer(template string, out chan Token) {
@@ -84,7 +84,7 @@ func RunTokenizer(template string, out chan Token) {
 	state := STATE_STRING
 	defer close(out)
 	for _, r := range template {
-		if (state == STATE_STRING) {
+		if state == STATE_STRING {
 			if r == '{' {
 				out <- StringToken(t)
 				t = ""
@@ -103,7 +103,7 @@ func RunTokenizer(template string, out chan Token) {
 				out <- ErrorToken("unknown escape code")
 				return
 			}
-		} else if ( state == STATE_NAME_FIRST) {
+		} else if state == STATE_NAME_FIRST {
 			if r == '}' {
 				out <- ErrorToken("variable not defined")
 				return
@@ -113,7 +113,7 @@ func RunTokenizer(template string, out chan Token) {
 			} else {
 				out <- ErrorToken("variable nume must start with letters")
 			}
-		} else if ( state == STATE_NAME_AFTER) {
+		} else if state == STATE_NAME_AFTER {
 			if r == '}' {
 				out <- VarToken(t)
 				t = ""
@@ -127,7 +127,7 @@ func RunTokenizer(template string, out chan Token) {
 			} else {
 				out <- ErrorToken("variable nume must start with letters")
 			}
-		} else if ( state == STATE_SPECIFIER_ZERO_FILL) {
+		} else if state == STATE_SPECIFIER_ZERO_FILL {
 			if r == '0' {
 				t = t + string(r)
 				state = STATE_SPECIFIER_FIELD_WIDTH
@@ -135,7 +135,7 @@ func RunTokenizer(template string, out chan Token) {
 				out <- ErrorToken("only zero fill allowed in specifier")
 				return
 			}
-		} else if ( state == STATE_SPECIFIER_FIELD_WIDTH) {
+		} else if state == STATE_SPECIFIER_FIELD_WIDTH {
 			if unicode.IsDigit(r) {
 				t = t + string(r)
 				state = STATE_SPECIFIER_DECIMAL
@@ -143,7 +143,7 @@ func RunTokenizer(template string, out chan Token) {
 				out <- ErrorToken("only digit allowed in field width")
 				return
 			}
-		} else if ( state == STATE_SPECIFIER_DECIMAL) {
+		} else if state == STATE_SPECIFIER_DECIMAL {
 			if r == 'd' {
 				t = t + string(r)
 				state = STATE_NAME_COMPLETE
@@ -151,7 +151,7 @@ func RunTokenizer(template string, out chan Token) {
 				out <- ErrorToken("d expected as field type specifier")
 				return
 			}
-		} else if ( state == STATE_NAME_COMPLETE) {
+		} else if state == STATE_NAME_COMPLETE {
 			if r == '}' {
 				out <- VarToken(t)
 				t = ""
@@ -174,32 +174,32 @@ func RunTokenizer(template string, out chan Token) {
 }
 
 type Token struct {
-	Kind int
+	Kind  int
 	Value string
-	Err error
+	Err   error
 }
 
 func StringToken(value string) Token {
 	return Token{
-		Kind: TOKEN_STRING,
+		Kind:  TOKEN_STRING,
 		Value: value,
-		Err: nil,
+		Err:   nil,
 	}
 }
 
 func VarToken(value string) Token {
 	return Token{
-		Kind: TOKEN_VAR,
+		Kind:  TOKEN_VAR,
 		Value: value,
-		Err: nil,
+		Err:   nil,
 	}
 }
 
 func ErrorToken(msg string) Token {
 	return Token{
-		Kind: TOKEN_ERROR,
+		Kind:  TOKEN_ERROR,
 		Value: "",
-		Err: errors.New(msg),
+		Err:   errors.New(msg),
 	}
 }
 
@@ -250,11 +250,11 @@ func (n ExpansionNode) Expand(c *Context) (string, error) {
 }
 
 func (n ExpansionNode) Vars() []string {
-	return []string{ n.Name }
+	return []string{n.Name}
 }
 
 type ZeroFillExpansionNode struct {
-	Name string
+	Name       string
 	FieldWidth int
 }
 
@@ -271,9 +271,6 @@ func (n ZeroFillExpansionNode) Expand(c *Context) (string, error) {
 	return fmt.Sprintf(format, numValue), nil
 }
 
-
 func (n ZeroFillExpansionNode) Vars() []string {
-	return []string{ n.Name }
+	return []string{n.Name}
 }
-
-

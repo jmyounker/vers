@@ -1,9 +1,9 @@
 package main
 
 import (
-	"testing"
 	"io/ioutil"
 	"os"
+	"testing"
 )
 
 func failWhenErr(t *testing.T, err error) {
@@ -33,7 +33,7 @@ func TestFileWithoutBranchesIsInvalid(t *testing.T) {
 	tf, err := ioutil.TempFile("", "version.json")
 	failWhenErr(t, err)
 	defer os.Remove(tf.Name())
-	c := Config{};
+	c := Config{}
 	failWhenErr(t, c.writeConfig(tf.Name()))
 	config, err := readConfig(tf.Name())
 	failWhen(t, err == nil)
@@ -46,11 +46,11 @@ func TestFileWithInvalidBranchesIsInvalid(t *testing.T) {
 	defer os.Remove(tf.Name())
 	c := Config{
 		Branches: []BranchConfig{{
-			BranchPattern: "",
+			BranchPattern:   "",
 			VersionTemplate: "",
 		},
 		},
-	};
+	}
 	failWhenErr(t, c.writeConfig(tf.Name()))
 	config, err := readConfig(tf.Name())
 	failWhen(t, err == nil)
@@ -58,19 +58,19 @@ func TestFileWithInvalidBranchesIsInvalid(t *testing.T) {
 }
 
 func TestBranchConfig(t *testing.T) {
-	var testBranchConfig = []struct{
-		BranchPattern string
+	var testBranchConfig = []struct {
+		BranchPattern   string
 		VersionTemplate string
-		ErrorValue string
-	} {
-		{ "", "{branch}", "branch pattern required"},
-		{ ".*", "", "version template required"},
-		{ "(", "{branch}", "branch pattern '(' is malformed"},
-		{ ".*", "{", "version template '{' is malformed"},
+		ErrorValue      string
+	}{
+		{"", "{branch}", "branch pattern required"},
+		{".*", "", "version template required"},
+		{"(", "{branch}", "branch pattern '(' is malformed"},
+		{".*", "{", "version template '{' is malformed"},
 	}
-	for _, tc := range(testBranchConfig) {
+	for _, tc := range testBranchConfig {
 		bc := BranchConfig{
-			BranchPattern: tc.BranchPattern,
+			BranchPattern:   tc.BranchPattern,
 			VersionTemplate: tc.VersionTemplate,
 		}
 		err := checkBranchConfig(bc)
@@ -87,13 +87,12 @@ func TestBranchParameterExtraction(t *testing.T) {
 		Branches: []BranchConfig{{
 			BranchPattern:   "release-RC(?P<rc>\\d+)",
 			VersionTemplate: "RC{rc}}",
-		},{
+		}, {
 			BranchPattern:   ".*",
 			VersionTemplate: "default",
 		},
 		},
-		DataFileFields: []string{
-		},
+		DataFileFields: []string{},
 	}
 	_, bp, err := c.getBranchConfig("release-RC2")
 	failWhenErr(t, err)
@@ -106,6 +105,3 @@ func TestBranchParameterExtraction(t *testing.T) {
 	failWhenErr(t, err)
 	failWhen(t, len(*bp) != 0)
 }
-
-
-

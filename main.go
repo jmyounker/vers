@@ -12,7 +12,7 @@ import (
 	"github.com/urfave/cli"
 )
 
-var version string;
+var version string
 
 func main() {
 	app := cli.NewApp()
@@ -30,7 +30,7 @@ func main() {
 		{
 			Name:   "init",
 			Action: actionInit,
-			Usage: "Create initial config file.",
+			Usage:  "Create initial config file.",
 			Flags: []cli.Flag{
 				cli.StringFlag{
 					Name:  "template",
@@ -61,7 +61,7 @@ func main() {
 		{
 			Name:   "data-file",
 			Action: actionDataFile,
-			Usage: "Generate data file for build.",
+			Usage:  "Generate data file for build.",
 			Flags: []cli.Flag{
 				cli.StringSliceFlag{
 					Name:  "option, X",
@@ -110,7 +110,7 @@ func actionInit(c *cli.Context) error {
 }
 
 var InitTemplates = map[string]Config{
-	"default": Config{
+	"default": {
 		Data: map[string]interface{}{},
 		Branches: []BranchConfig{{
 			BranchPattern:   ".*",
@@ -123,7 +123,7 @@ var InitTemplates = map[string]Config{
 			"version",
 		},
 	},
-	"semvar": Config{
+	"semvar": {
 		Data: map[string]interface{}{
 			"major":   0,
 			"minor":   0,
@@ -143,7 +143,7 @@ var InitTemplates = map[string]Config{
 			"version",
 		},
 	},
-	"python": Config{
+	"python": {
 		Data: map[string]interface{}{
 			"major":   0,
 			"minor":   0,
@@ -152,7 +152,7 @@ var InitTemplates = map[string]Config{
 		Branches: []BranchConfig{{
 			BranchPattern:   "master|trunk",
 			VersionTemplate: "{major}.{minor}.{release}",
-		},{
+		}, {
 			BranchPattern:   ".*",
 			VersionTemplate: "{major}.{minor}.{release}dev{commit-counter}",
 		},
@@ -179,7 +179,7 @@ func createInitFile(versionFile string, templateName string, rcsName string) err
 			rcsName = rcs.Name()
 		}
 	}
-	for _, df := range(RcsDataFileFields(rcsName)) {
+	for _, df := range RcsDataFileFields(rcsName) {
 		c.DataFileFields = append(c.DataFileFields, df)
 	}
 	return c.writeConfig(versionFile)
@@ -306,7 +306,7 @@ func actionDataFile(c *cli.Context) error {
 	ctx.State["version"] = version
 
 	data := map[string]string{}
-	if (ctx.BranchConfig.DataFileFields != nil) {
+	if ctx.BranchConfig.DataFileFields != nil {
 		for _, v := range ctx.BranchConfig.DataFileFields {
 			value, err := LookupParameter(v, &ctx)
 			if err != nil {

@@ -4,7 +4,6 @@ import (
 	"testing"
 )
 
-
 func TestParseSvnInfo(t *testing.T) {
 	svnOut := "Path: foo.c\n" +
 		"Name: foo.c\n" +
@@ -25,7 +24,7 @@ func TestParseSvnInfo(t *testing.T) {
 	failWhenErr(t, err)
 	v, ok := m["Repository Root"]
 	failWhen(t, !ok)
-	failWhen(t, v != "http://svn.red-bean.com/repos/test" )
+	failWhen(t, v != "http://svn.red-bean.com/repos/test")
 }
 
 func TestParseRevisionFromXmlLog(t *testing.T) {
@@ -54,18 +53,18 @@ func TestParseRevisionFromXmlLogWithEmptyRepo(t *testing.T) {
 }
 
 func TestParseBranch(t *testing.T) {
-	var cases = []struct{
-		Url string
+	var cases = []struct {
+		Url    string
 		Branch string
 	}{
-		{ "^/trunk/foo", "trunk" },
-		{ "^/trunk", "trunk" },
-		{ "^/branches/foo", "foo" },
-		{ "^/branches/foo/bar", "foo" },
-		{ "^/tags/foo", "foo" },
-		{ "^/tags/foo/bar", "foo" },
+		{"^/trunk/foo", "trunk"},
+		{"^/trunk", "trunk"},
+		{"^/branches/foo", "foo"},
+		{"^/branches/foo/bar", "foo"},
+		{"^/tags/foo", "foo"},
+		{"^/tags/foo/bar", "foo"},
 	}
-	for _, tc := range(cases) {
+	for _, tc := range cases {
 		b, err := ParseBranchFromSvnPath(tc.Url)
 		failWhenErr(t, err)
 		failWhen(t, b != tc.Branch)

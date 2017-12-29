@@ -3,6 +3,9 @@ all: clean update build test show
 CMD := vers
 PKG_NAME := vers
 
+GOFMT=gofmt -s
+GOFILES=$(wildcard *.go)
+
 clean:
 	rm -f $(CMD)
 	rm -rf target
@@ -31,6 +34,9 @@ endif
 
 install: set-prefix test
 	install -m 755 -o $(INSTALL_USER) -g $(INSTALL_GROUP) $(CMD) $(PREFIX)/bin/$(CMD)
+
+format:
+	$(GOFMT) -w $(GOFILES)
 
 show: build
 	./$(CMD) --version

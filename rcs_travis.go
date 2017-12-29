@@ -2,8 +2,8 @@ package main
 
 import (
 	"errors"
-	"os"
 	"fmt"
+	"os"
 )
 
 type RcsTravis struct {

@@ -4,8 +4,8 @@ import (
 	"bytes"
 	"errors"
 	"os/exec"
-	"strings"
 	"strconv"
+	"strings"
 )
 
 type RcsGit struct {

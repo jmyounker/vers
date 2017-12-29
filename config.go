@@ -16,17 +16,16 @@ type Config struct {
 }
 
 type BranchConfig struct {
-	BranchPattern   string `json:"branch"`
-	VersionTemplate string `json:"version"`
-	Data map[string]interface{} `json:"data,omitempty"`
-	DataFileFields []string `json:"data-file,omitempty"`
+	BranchPattern   string                 `json:"branch"`
+	VersionTemplate string                 `json:"version"`
+	Data            map[string]interface{} `json:"data,omitempty"`
+	DataFileFields  []string               `json:"data-file,omitempty"`
 }
 
 func (c *Config) HasData(name string) bool {
 	_, ok := c.Data[name]
 	return ok
 }
-
 
 func (c *Config) GetDataInt(name string) (int, error) {
 	v, ok := c.Data[name]
@@ -128,7 +127,7 @@ func (c *Config) getBranchConfig(branch string) (*BranchConfig, *map[string]stri
 		params := map[string]string{}
 		paramNames := ptrn.SubexpNames()[1:]
 		paramValues := matches[1:]
-		for i, name := range(paramNames) {
+		for i, name := range paramNames {
 			params[name] = paramValues[i]
 		}
 		return &bc, &params, nil
@@ -144,4 +143,3 @@ func ValidateTemplateAsVersion(t Template) error {
 	}
 	return nil
 }
-

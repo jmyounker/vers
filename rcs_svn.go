@@ -1,13 +1,13 @@
 package main
 
 import (
-	"os/exec"
 	"bytes"
-	"strings"
+	"encoding/xml"
 	"errors"
+	"os/exec"
 	"regexp"
 	"strconv"
-	"encoding/xml"
+	"strings"
 )
 
 type RcsSvn struct {
@@ -94,7 +94,7 @@ func ParseSvnInfo(svnOut string) (map[string]string, error) {
 		return nil, errors.New("expected at least one line of svn info output")
 	}
 	info := map[string]string{}
-	for _, line := range(lines) {
+	for _, line := range lines {
 		if line == "" {
 			continue
 		}
@@ -114,7 +114,7 @@ func ParseBranchFromSvnPath(url string) (string, error) {
 		regexp.MustCompile("/(trunk)$"),
 		regexp.MustCompile("/tags/([^/]+)"),
 	}
-	for _, ptrn := range(ptrns) {
+	for _, ptrn := range ptrns {
 		m := ptrn.FindStringSubmatch(url)
 		if len(m) == 2 {
 			return string(m[1]), nil
@@ -124,7 +124,7 @@ func ParseBranchFromSvnPath(url string) (string, error) {
 }
 
 type LogRecord struct {
-	XMLName xml.Name `xml:"log"`
+	XMLName  xml.Name `xml:"log"`
 	LogEntry LogEntry `xml:"logentry"`
 }
 
