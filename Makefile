@@ -11,7 +11,7 @@ clean:
 	rm -rf target
 
 update:
-	go get
+	go install
 
 buildp1:
 	go build -ldflags "-X main.version=P1"
